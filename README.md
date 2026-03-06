@@ -51,7 +51,7 @@ julia> J1(), J2()
 (-1.1000442827230061, -1.1000442827230057)
 ```
 
-Nested integrals using different solvers for each of them using `IS.Multi`. As an example, consider
+Nested integrals using different solvers for each of them can be implemented using the solver `IS.Multi`. As an example, consider
 
 $$J = \int_2^3 dy\int_0^1 dx (x-y)^2\cos(x+y) $$
 
