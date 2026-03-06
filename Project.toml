@@ -1,0 +1,13 @@
+name = "IntegrationInterface"
+uuid = "03ca86a4-b7cd-4b10-a38f-d7a84f40de1e"
+authors = ["Pablo San-Jose <lekand@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.10.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
