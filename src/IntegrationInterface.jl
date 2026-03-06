@@ -1,5 +1,8 @@
 module IntegrationInterface
 
-# Write your package code here.
+export integral, IntegrationSolvers, IS
+
+include("solvers.jl")
+include("integral.jl")
 
 end
