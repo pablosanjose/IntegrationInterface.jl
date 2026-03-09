@@ -64,18 +64,17 @@ f (generic function with 1 method)
 julia> J1 = integral(f, Domain.Segment(0,1), Domain.Segment(2,3); solver = (Backend.QuadGK(), Backend.QuadGK()))
 Integral: callable object representing a numerical integral over a domain
   Mutating   : false
-  Domain     : ([0, 1], [2, 3])
+  Domain     : (Segment(0, 1), Segment(2, 3))
   Solver     : Multi(QuadGK, QuadGK)
 
 julia> J2 = integral(f, Domain.Box((0,2), (1,3)); solver = Backend.HCubature())
 Integral: callable object representing a numerical integral over a domain
   Mutating   : false
-  Domain     : ([0, 2], [1, 3])
+  Domain     : Box((0, 2), (1, 3))
   Solver     : HCubature
 
 julia> (J1(), J2())
 (-3.800374064781164, -3.800374064812097)
-
 ```
 Note that the syntax of the domain is different for two nested `Backend.QuadGK` (intervals for each integral, from inner to outermost) versus `Backend.HCubature` (min/max corners of the rectangle domain). When using `Multi`, `f(r, ...)` and `f!(out, r, ...)` must accept points `r` of type `Tuple`. Note that when using nested solvers through `Multi`, we can make the domain for solver `i` depend on the coordinates `(r[i+1],..., r[n])` of the outer integrals. We achieve this by passing a function as the domain. As an example, the integral of the above `f` on a unit circle,
 
