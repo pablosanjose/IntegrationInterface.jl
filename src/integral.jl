@@ -31,15 +31,15 @@ domainname(d::Tuple) = string("(", join(domainname.(d), ", "), ")")
 
 sanitize_domain(domainfunc::Function) = Domain.Functional(domainfunc)
 sanitize_domain(domain::Tuple{AbstractDomain}) = only(domain)
-sanitize_domain(domains::Tuple) = sanitize_domain.(domains)   # multiple domains
+sanitize_domain(domains::Tuple) = sanitize_domain.(domains)   # nested domains
 sanitize_domain(domain::AbstractDomain) = domain
 sanitize_domain(domain) = throw(ArgumentError("Invalid domain specification $(domainname(domain))"))
 
 sanitize_solver(solver::AbstractBackend, ::AbstractDomain) = solver
 sanitize_solver(solver::AbstractBackend, ::NTuple{N,AbstractDomain}) where {N} =
-    Multi(solver, Val(N))
+    Nested(solver, Val(N))
 sanitize_solver(solvers::NTuple{N,AbstractBackend}, ::NTuple{N,AbstractDomain}) where {N} =
-    Multi(solvers)
+    Nested(solvers)
 sanitize_solver(solver, _) =
     throw(ArgumentError("Invalid solver specification $(solvername(solver)) for the given domain $(domainname(domain))."))
 
@@ -47,11 +47,11 @@ sanitize_solver(solver, _) =
 check_domain_solver(domain::AbstractDomain, solver::AbstractBackend) =
     error("The integral solver $(solvername(solver)) does not support the domain $(domainname(domain)), or solver backend not loaded.")
 
-# for Multi, check each domain with corresponding solver.
-function check_domain_solver(domains::NTuple{N,AbstractDomain}, solver::Multi{N}) where {N}
+# for Nested, check each domain with corresponding solver.
+function check_domain_solver(domains::NTuple{N,AbstractDomain}, solver::Nested{N}) where {N}
     last(domains) isa Domain.Functional &&
         throw(ArgumentError("Outermost (last) domain in nested integral cannot be a Domain.Functional."))
-    # Functional non-outer domains are allowed for any solver in Multi (we cannot know its type until runtime)
+    # Functional non-outer domains are allowed for any solver in Nested (we cannot know its type until runtime)
     foreach(zip(domains, solvers(solver))) do (d, s)
         d isa Domain.Functional || check_domain_solver(d, s)
     end
