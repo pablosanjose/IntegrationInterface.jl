@@ -1,6 +1,6 @@
 abstract type AbstractDomain end
 
-module Domains
+module Domain
 
 using IntegrationInterface: AbstractDomain
 import IntegrationInterface as II

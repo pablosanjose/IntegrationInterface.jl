@@ -13,7 +13,7 @@ function integral(f::F, domains...; result = missing, solver = default_solver(f,
 	return Integral(f, result, domain´, solver´)
 end
 # fallback. Can be overridden for user-defined f types and domains
-default_solver(_...) = Backends.QuadGK()
+default_solver(_...) = Backend.QuadGK()
 
 ismutating(i::Integral) = !ismissing(i.result)
 
@@ -29,7 +29,7 @@ domainname(d::Tuple) = string("(", join(domainname.(d), ", "), ")")
 
 ## sanitization ##
 
-sanitize_domain(domainfunc::Function) = Domains.Functional(domainfunc)
+sanitize_domain(domainfunc::Function) = Domain.Functional(domainfunc)
 sanitize_domain(domain::Tuple{AbstractDomain}) = only(domain)
 sanitize_domain(domains::Tuple) = sanitize_domain.(domains)   # multiple domains
 sanitize_domain(domain::AbstractDomain) = domain
@@ -49,11 +49,11 @@ check_domain_solver(domain::AbstractDomain, solver::AbstractBackend) =
 
 # for Multi, check each domain with corresponding solver.
 function check_domain_solver(domains::NTuple{N,AbstractDomain}, solver::Multi{N}) where {N}
-    last(domains) isa Domains.Functional &&
-        throw(ArgumentError("Outermost (last) domain in nested integral cannot be a Domains.Functional."))
+    last(domains) isa Domain.Functional &&
+        throw(ArgumentError("Outermost (last) domain in nested integral cannot be a Domain.Functional."))
     # Functional non-outer domains are allowed for any solver in Multi (we cannot know its type until runtime)
     foreach(zip(domains, solvers(solver))) do (d, s)
-        d isa Domains.Functional || check_domain_solver(d, s)
+        d isa Domain.Functional || check_domain_solver(d, s)
     end
     return nothing
 end

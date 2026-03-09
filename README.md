@@ -8,9 +8,9 @@ $$J(\text{args}...; \text{params}...) = \int_D d^n x f(\boldsymbol x, \text{args
 
 The general interface reads
 ```julia
-julia> J = integral(f, domain; solver::AbstractBackend = Backends.QuadGK(), result = missing)
+julia> J = integral(f, domain; solver::AbstractBackend = Backend.QuadGK(), result = missing)
 ```
-This produces an `J::Integral` object. Possible domains are produced with `Domains.Segment`, `Domains.Box` or tuples thereof (for nested integrals, see below). Here `Backends` and `Domains` are exported submodules of `IntegrationInterface`
+This produces an `J::Integral` object. Possible domains are produced with `Domain.Segment`, `Domain.Box` or tuples thereof (for nested integrals, see below). Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`
 
 Mutating functions `f!(out, x, args...; params...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
@@ -22,23 +22,23 @@ In the mutating case, this will also write the value of the integral into `resul
 
 The integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding solvers in `IntegralSolvers` are
 
-- QuadGK.jl: `Backends.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, for 1D integrals over a `Domains.Segment`)
-- Cubature.jl: `Backends.Cubature(; opts...)` (calls `hcubature`, for n-D integrals over a `Domains.Box`)
-- HCubature.jl:  `Backends.HCubature(; opts...)` (calls `hcubature`, for n-D integrals in a `Domains.Box`)
+- QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, for 1D integrals over a `Domain.Segment`)
+- Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`, for n-D integrals over a `Domain.Box`)
+- HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, for n-D integrals in a `Domain.Box`)
 
-We also provide a `Backends.Quadrature((nodes, weights))` solver that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
+We also provide a `Backend.Quadrature((nodes, weights))` solver that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
 ```julia
 julia> using FastGaussQuadrature
 
 julia> f(x) = cos(x);
 
-julia> J1 = integral(f, Domains.Segment(3,5); solver = Backends.Quadrature(gausslegendre(10)))
+julia> J1 = integral(f, Domain.Segment(3,5); solver = Backend.Quadrature(gausslegendre(10)))
 Integral: callable object representing a numerical integral over a domain
   Mutating   : false
   Domain     : Segment(3, 5)
   Solver     : Quadrature
 
-julia> J2 = integral(f, Domains.Segment(3,5); solver = Backends.QuadGK())
+julia> J2 = integral(f, Domain.Segment(3,5); solver = Backend.QuadGK())
 Integral: callable object representing a numerical integral over a domain
   Mutating   : false
   Domain     : Segment(3, 5)
@@ -61,13 +61,13 @@ This integral can be evaluated as one adaptive `HCubature` or two nested `QuadGK
 julia> f((x,y)) = (x-y)^2 * cos(x+y)
 f (generic function with 1 method)
 
-julia> J1 = integral(f, Domains.Segment(0,1), Domains.Segment(2,3); solver = (Backends.QuadGK(), Backends.QuadGK()))
+julia> J1 = integral(f, Domain.Segment(0,1), Domain.Segment(2,3); solver = (Backend.QuadGK(), Backend.QuadGK()))
 Integral: callable object representing a numerical integral over a domain
   Mutating   : false
   Domain     : ([0, 1], [2, 3])
   Solver     : Multi(QuadGK, QuadGK)
 
-julia> J2 = integral(f, Domains.Box((0,2), (1,3)); solver = Backends.HCubature())
+julia> J2 = integral(f, Domain.Box((0,2), (1,3)); solver = Backend.HCubature())
 Integral: callable object representing a numerical integral over a domain
   Mutating   : false
   Domain     : ([0, 2], [1, 3])
@@ -77,13 +77,13 @@ julia> (J1(), J2())
 (-3.800374064781164, -3.800374064812097)
 
 ```
-Note that the syntax of the domain is different for two nested `Backends.QuadGK` (intervals for each integral, from inner to outermost) versus `Backends.HCubature` (min/max corners of the rectangle domain). When using `Multi`, `f(r, ...)` and `f!(out, r, ...)` must accept points `r` of type `Tuple`. Note that when using nested solvers through `Multi`, we can make the domain for solver `i` depend on the coordinates `(r[i+1],..., r[n])` of the outer integrals. We achieve this by passing a function as the domain. As an example, the integral of the above `f` on a unit circle,
+Note that the syntax of the domain is different for two nested `Backend.QuadGK` (intervals for each integral, from inner to outermost) versus `Backend.HCubature` (min/max corners of the rectangle domain). When using `Multi`, `f(r, ...)` and `f!(out, r, ...)` must accept points `r` of type `Tuple`. Note that when using nested solvers through `Multi`, we can make the domain for solver `i` depend on the coordinates `(r[i+1],..., r[n])` of the outer integrals. We achieve this by passing a function as the domain. As an example, the integral of the above `f` on a unit circle,
 
 $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = integral(f, y -> Domains.Segment(-sqrt(1-y^2), sqrt(1-y^2)), Domains.Segment(-1,1), solver = (Backends.QuadGK(), Backends.QuadGK()));
+julia> J = integral(f, y -> Domain.Segment(-sqrt(1-y^2), sqrt(1-y^2)), Domain.Segment(-1,1), solver = (Backend.QuadGK(), Backend.QuadGK()));
 
 julia> J()
 1.324825188363749

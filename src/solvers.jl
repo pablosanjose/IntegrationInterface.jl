@@ -1,9 +1,9 @@
 # We bundle AbstractBackends in a submodule to avoid name clashes with their
-# respective solver packages. We define the IS alias for easy access to Backends.
+# respective solver packages. We define the IS alias for easy access to Backend.
 
 abstract type AbstractBackend end
 
-module Backends
+module Backend
 
 using IntegrationInterface: AbstractBackend
 
@@ -39,4 +39,4 @@ Quadrature((nodes, weights)) = Quadrature(nodes, weights)
 
 end # module
 
-const IS = Backends
+const IS = Backend

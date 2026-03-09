@@ -35,4 +35,4 @@ sanitize_domain(domain, s::Multi) = length(domain) == length(s) ? domain :
 	only(s)((out, x, as...; ps...) -> f!(out, (x..., point...), as...; ps...), maybe_evaluate_domain(only(domains), point), result, args; params...)
 
 maybe_evaluate_domain(domain, _) = domain
-maybe_evaluate_domain(domain::Domains.Functional, point) = domain.f(point...)
+maybe_evaluate_domain(domain::Domain.Functional, point) = domain.f(point...)
