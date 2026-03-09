@@ -83,7 +83,7 @@ $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = integral(f, y -> Domain.Segment(-sqrt(1-y^2), sqrt(1-y^2)), Domain.Segment(-1,1), solver = (Backend.QuadGK(), Backend.QuadGK()));
+julia> J = integral(f, y -> Domain.Segment(-sqrt(1-y^2), sqrt(1-y^2)), Domain.Segment(-1,1); solver = (Backend.QuadGK(), Backend.QuadGK()));
 
 julia> J()
 1.324825188363749
