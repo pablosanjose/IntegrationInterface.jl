@@ -31,6 +31,8 @@ II.domainname(d::Box) = "Box($(d.mins), $(d.maxs))"
 
 # constructors #
 
+Segment(x1::Number, x2::Number) = Segment(promote(x1, x2)...)
+
 Segment(s::NTuple{2,Number}...) = SegmentGroup(collect(s))
 
 function Segment(node1::Number, node2::Number, node3::Number, nodes::Number...)
