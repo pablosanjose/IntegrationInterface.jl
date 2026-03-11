@@ -47,7 +47,7 @@ As shown above, the integration is actually performed by backend packages that m
 
 We also provide a `Backend.Quadrature((nodes, weights))` solver that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
 ```julia
-julia> using FastGaussQuadrature
+julia> using FastGaussQuadrature, QuadGK
 
 julia> f(x) = cos(x);
 
@@ -112,9 +112,18 @@ $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 can be expressed as
 ```julia
 julia> J = f |> integral(Domain.Segment(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> integral(Domain.Segment(-1,1))
+Integral
+  Mutating   : false
+  Domain     : Segment(-1, 1)
+  Solver     : QuadGK
+  Integrand  : Integral
+    Mutating   : false
+    Domain     : Functional{Segment}
+    Solver     : QuadGK
+    Integrand  : f
 
 julia> J()
 1.324825188363749
 
 ```
-where we have passed a function to the `Domain.Segment` instead of the segment extrema.
+where we have passed a function to the `Domain.Segment` instead of the segment nodes.

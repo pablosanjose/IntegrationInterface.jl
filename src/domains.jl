@@ -27,7 +27,7 @@ end
 II.domainname(d::Segment) = "Segment($(d.x1), $(d.x2))"
 II.domainname(d::SegmentGroup) = "SegmentGroup($(d.segments))"
 II.domainname(d::Box) = "Box($(d.mins), $(d.maxs))"
-II.domainname(d::Functional) = "Functional{$(d.type)}"
+II.domainname(d::Functional) = "Functional{$(nameof(d.type))}"
 
 ## API ##
 
