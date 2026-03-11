@@ -4,15 +4,15 @@
 
 This package aims to be a lightweight, faster-loading alternative to the excellent [Integrals.jl](https://github.com/SciML/Integrals.jl) from the SciML ecosystem. IntegrationInterface.jl offers an interface to perform n-dimensional numerical integrals of scalars, arrays or more general objects, over a domain $D$.
 
-$$J(\text{args}...; \text{params}...) = \int_D d^n x f(\boldsymbol x, \text{args}...; \text{params}...)$$
+$$J(\text{args}...; \text{params}...) = \int_{D(\text{args}...)} d^n x f(\boldsymbol x..., \text{args}...; \text{params}...)$$
 
 The general interface reads
 ```julia
 julia> J = integral(f, domain; solver::AbstractBackend = Backend.QuadGK(), result = missing)
 ```
-This produces an `J::Integral` object. Possible domains are produced with `Domain.Segment`, `Domain.Box` or tuples thereof (for nested integrals, see below). Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`
+This produces an `J::Integral` object. Possible domains are produced with `Domain.Segment` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
 
-Mutating functions `f!(out, x, args...; params...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
+Mutating functions `f!(out, x..., args...; params...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
 To compute the integral for a set of `args` and `params`, use the syntax
 ```julia
@@ -20,7 +20,26 @@ julia> J(args...; params...)
 ```
 In the mutating case, this will also write the value of the integral into `result`.
 
-The integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding solvers in `IntegralSolvers` are
+Example:
+```julia
+julia> using HCubature
+[ Info: Precompiling IntegrationInterfaceQuadGKExt [6a486dfe-6a5b-5d49-a9f9-02f4245ab8d6]
+[ Info: Precompiling IntegrationInterfaceHCubatureExt [b56c1907-5b79-5f70-9c8b-cc15ee23dcd1]
+
+julia> f(x,y) = cos(x-y);
+
+julia> J = integral(f, Domain.Box((-1,-1), (1,1)); solver = Backend.HCubature())
+Integral
+  Mutating   : false
+  Domain     : Box((-1, -1), (1, 1))
+  Solver     : HCubature
+  Integrand  : f
+
+julia> J()
+2.8322936730937722
+```
+
+As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding solvers in `IntegralSolvers` are
 
 - QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, for 1D integrals over a `Domain.Segment`)
 - Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`, for n-D integrals over a `Domain.Box`)
@@ -33,22 +52,24 @@ julia> using FastGaussQuadrature
 julia> f(x) = cos(x);
 
 julia> J1 = integral(f, Domain.Segment(3,5); solver = Backend.Quadrature(gausslegendre(10)))
-Integral: callable object representing a numerical integral over a domain
+Integral
   Mutating   : false
   Domain     : Segment(3, 5)
   Solver     : Quadrature
+  Integrand  : f
 
 julia> J2 = integral(f, Domain.Segment(3,5); solver = Backend.QuadGK())
-Integral: callable object representing a numerical integral over a domain
+Integral
   Mutating   : false
   Domain     : Segment(3, 5)
   Solver     : QuadGK
+  Integrand  : f
 
 julia> J1(), J2()
 (-1.1000442827230061, -1.1000442827230057)
 ```
 
-We can also express nested integrals using different solvers and domains for each of them,
+We can also express nested integrals such as
 
 $$J(\text{args}...; \text{params}...) = \int_{D_n} dx_n\dots\int_{D_1} dx_1 f(\boldsymbol{x}, \text{args}...; \text{params}...)$$
 
@@ -56,35 +77,44 @@ As a concrete example, consider
 
 $$J = \int_2^3 dy\int_0^1 dx (x-y)^2\cos(x+y) $$
 
-This integral can be evaluated as one adaptive `HCubature` or two nested `QuadGK`:
+This integral can be evaluated either as one adaptive `HCubature` or two nested `QuadGK` (the default solver):
 ```julia
-julia> f((x,y)) = (x-y)^2 * cos(x+y)
-f (generic function with 1 method)
+julia> f(x,y) = (x-y)^2 * cos(x+y)
+f (generic function with 2 methods)
 
-julia> J1 = integral(f, Domain.Segment(0,1), Domain.Segment(2,3); solver = (Backend.QuadGK(), Backend.QuadGK()))
-Integral: callable object representing a numerical integral over a domain
+julia> J1 = f |> integral(Domain.Segment(0,1)) |> integral(Domain.Segment(2,3))
+Integral
   Mutating   : false
-  Domain     : (Segment(0, 1), Segment(2, 3))
-  Solver     : Nested(QuadGK, QuadGK)
+  Domain     : Segment(2, 3)
+  Solver     : QuadGK
+  Integrand  : Integral
+    Mutating   : false
+    Domain     : Segment(0, 1)
+    Solver     : QuadGK
+    Integrand  : f
 
 julia> J2 = integral(f, Domain.Box((0,2), (1,3)); solver = Backend.HCubature())
-Integral: callable object representing a numerical integral over a domain
+Integral
   Mutating   : false
   Domain     : Box((0, 2), (1, 3))
   Solver     : HCubature
+  Integrand  : f
 
 julia> (J1(), J2())
 (-3.800374064781164, -3.800374064812097)
 ```
-Note that the syntax of the domain is different for two nested `Backend.QuadGK` (intervals for each integral, from inner to outermost) versus `Backend.HCubature` (min/max corners of the rectangle domain). When using `Nested`, `f(r, ...)` and `f!(out, r, ...)` must accept points `r` of type `Tuple`. Note that when using nested solvers through `Nested`, we can make the domain for solver `i` depend on the coordinates `(r[i+1],..., r[n])` of the outer integrals. We achieve this by passing a function as the domain. As an example, the integral of the above `f` on a unit circle,
+Note the currying syntax used above for `J1`. It is equivalent to `J1 = integral(integral(f, Domain.Segment(0,1)), Domain.Segment(2,3))`.
+
+We can also make inner domains depend on outer integration variables. For example,
 
 $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = integral(f, y -> Domain.Segment(-sqrt(1-y^2), sqrt(1-y^2)), Domain.Segment(-1,1); solver = (Backend.QuadGK(), Backend.QuadGK()));
+julia> J = f |> integral(Domain.Segment(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> integral(Domain.Segment(-1,1))
 
 julia> J()
 1.324825188363749
 
 ```
+where we have passed a function to the `Domain.Segment` instead of the segment extrema.
