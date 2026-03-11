@@ -19,13 +19,15 @@ struct Box{N,T<:Number} <: AbstractDomain
     maxs::NTuple{N,T}
 end
 
-struct Functional{F} <: AbstractDomain
+struct Functional{D<:AbstractDomain,F} <: AbstractDomain
+    type::Type{D}
     f::F
 end
 
 II.domainname(d::Segment) = "Segment($(d.x1), $(d.x2))"
 II.domainname(d::SegmentGroup) = "SegmentGroup($(d.segments))"
 II.domainname(d::Box) = "Box($(d.mins), $(d.maxs))"
+II.domainname(d::Functional) = "Functional{$(d.type)}"
 
 ## API ##
 
@@ -33,12 +35,20 @@ II.domainname(d::Box) = "Box($(d.mins), $(d.maxs))"
 
 Segment(x1::Number, x2::Number) = Segment(promote(x1, x2)...)
 
+Segment((x1, x2)::NTuple{2,Number}) = Segment(x1, x2)
+
 Segment(s::NTuple{2,Number}...) = SegmentGroup(collect(s))
 
 function Segment(node1::Number, node2::Number, node3::Number, nodes::Number...)
     nodes´ = promote(node1, node2, node3, nodes...)
     return SegmentGroup(collect(zip(Base.front(nodes´), Base.tail(nodes´))))
 end
+
+(::Type{D})(f::F) where {D<:AbstractDomain,F<:Function} = Functional(D, f)
+
+# call #
+
+(f::Functional{D})(args...) where {D} = D(f.f(args...))
 
 # conversions #
 ungroup(ss::SegmentGroup) = (Segment(s) for s in ss.segments)

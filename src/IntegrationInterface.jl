@@ -11,7 +11,6 @@ include("serialization.jl")
 include("domains.jl")
 include("solvers.jl")
 include("quadrature.jl")  # implementation of Backend.Quadrature, no extension required
-include("nested.jl")       # nested-solver for nested integrals, no extension required
 include("integral.jl")
 
 end
