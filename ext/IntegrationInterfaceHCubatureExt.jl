@@ -4,15 +4,14 @@ using HCubature
 using IntegrationInterface
 import IntegrationInterface as II
 
-# supported domains (no need to deal with Domain.Functionals here)
-II.check_domain_solver(::Type{<:Domain.Box}, ::Backend.HCubature) = nothing
+II.convert_domain(s::Domain.Box, ::Backend.HCubature) = II.convert_domain_generic(s)
 
-II.convert_domain(s::Domain.Box, ::Backend.HCubature) = (s.mins, s.maxs)
+II.convert_integrand(i::II.Integral{Missing,<:Backend.HCubature}, domain, args; params...) =
+    II.convert_integrand_generic(i, domain, args; params...)
 
-(s::Backend.HCubature)(f, domain, ::Missing, args; params...) =
-	hcubature(point -> f(point..., args...; params...), II.convert_domain(domain, s, args)...; s.opts...) |> first
-
-(::Backend.HCubature)(f!, domain, result, args; params...) =
+II.convert_integrand(::II.Integral{<:Any,<:Backend.Cubature}, domain, args; params...) =
     throw(ArgumentError("HCubature does not support in-place integration. Use StaticArrays for array-valued integrands."))
+
+(s::Backend.HCubature)(f, domain, ::Missing) = hcubature(f, domain...; s.opts...) |> first
 
 end # module
