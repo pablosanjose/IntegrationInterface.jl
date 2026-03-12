@@ -1,29 +1,27 @@
-struct Integral{R,S<:AbstractBackend,F,D}
-    integrand::F	# usually a function, but can be other kind of object
-    result::R		# will be Missing if not in-place
-    domain::D		# Tuple of AbstractDomains or a single AbstractDomain
-    solver::S		# object representing the integration solver backend(s)
-end
-
 ## API ##
-function integral(f::F, domain; result = missing, solver = default_solver(f, domain)) where {F}
-    domain´ = sanitize_domain(domain)
-    solver´ = sanitize_solver(solver, domain´)
-    check_domain_solver(domain´, solver´)
-	return Integral(f, result, domain´, solver´)
+function integral(f::F, domain::AbstractDomain; result = missing, solver::AbstractBackend = default_solver(domain)) where {F}
+	return Integral(f, result, domain, solver)
 end
 
 # currying version
 integral(domain; kw...) = f -> integral(f, domain; kw...)
 
-# fallback. Can be overridden for user-defined f types and domains
-default_solver(_...) = Backend.QuadGK()
+# Can be overridden for user-defined f types and domains
+default_solver(::Domain.Segment) = Backend.QuadGK()
+default_solver(::Domain.Sum{<:NTuple{<:Any,Domain.Segment}}) = Backend.QuadGK()
+default_solver(::Domain.Functional{<:Domain.Segment}) = Backend.QuadGK()
+default_solver(::Domain.Box) = Backend.HCubature()
+default_solver(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
+default_solver(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
+default_solver(d) = throw(ArgumentError("No default solver exists for domain $(domainname(d))"))
 
 ismutating(i::Integral) = !ismissing(i.result)
 
 integrand(i::Integral) = i.integrand
 
 solver(i::Integral) = i.solver
+
+result(i::Integral) = i.result
 
 solvername(i::Integral) = solvername(solver(i))
 solvername(s::AbstractBackend) = nameof(typeof(s))
@@ -33,30 +31,71 @@ domain(i::Integral) = i.domain
 
 domainname(i::Integral) = domainname(domain(i))
 
-## sanitization ##
-
-sanitize_domain(domain::AbstractDomain) = domain
-sanitize_domain(domain) = throw(ArgumentError("Invalid domain specification $(domainname(domain))"))
-
-sanitize_solver(solver::AbstractBackend, ::AbstractDomain) = solver
-sanitize_solver(solver, domain) =
-    throw(ArgumentError("Invalid solver specification $(solvername(solver)) for the given domain $(domainname(domain)), or solver backend not loaded."))
-
-# error by default. Solvers must declare they understand the domain.
-
-# we translate to typeof(domain) to allow Functional to be checked automatically
-check_domain_solver(domain::AbstractDomain, solver::AbstractBackend) = check_domain_solver(typeof(domain), solver)
-check_domain_solver(domain::Domain.Functional, solver::AbstractBackend) = check_domain_solver(domain.type, solver)
-check_domain_solver(domain::Type{<:AbstractDomain}, solver::AbstractBackend) =
-    error("The integral solver $(solvername(solver)) does not support $(nameof(domain)) domains, or solver backend not loaded.")
-
 ## call syntax (scalar and in-place) ##
-(i::Integral{Missing})(args...; params...) = call!(i, args...; params...)
-(i::Integral)(args...; params...) = copy(call!(i, args...; params...))
+(i::Integral{Missing})(args...; params...) =
+    integrate(i, evaluate_domain(domain(i), args; params...), args; params...)
+(i::Integral)(args...; params...) =
+    copy(integrate(i, evaluate_domain(domain(i), args; params...), args; params...))
 
-call!(i::Integral, args...; params...) = i.solver(i.integrand, i.domain, i.result, args; params...)
+integrate(i::Integral, domain, args; params...) =
+    i.solver(convert_integrand(i, domain, args; params...), convert_domain(domain, i.solver), i.result)
 
-(s::AbstractBackend)(f, domain, result, args; params...) =
+# Any Domain Sum is handled by summing over the domains ##
+# non-mutating
+function integrate(i::Integral{Missing}, domain::Domain.Sum, args; params...)
+    result = sum(ungroup(domain)) do subdomain
+        subdomain´ = evaluate_domain(subdomain, args; params...)
+        integrate(i, convert_domain(subdomain´, i.solver), args; params...)
+    end
+    return result
+end
+
+# mutating
+function integrate(i::Integral, domain::Domain.Sum, args; params...)
+    resultsum = zero(result(i))
+    foreach(ungroup(domain)) do subdomain
+        subdomain´ = evaluate_domain(subdomain, args; params...)
+        resultsum .+= integrate(i, convert_domain(subdomain´, i.solver), args; params...)
+    end
+    return resultsum
+end
+
+evaluate_domain(d::Domain.Functional, args; params...) = d(args...; params...)
+evaluate_domain(d::AbstractDomain, args; params...) = d
+
+## Extension fallbacks and generics ##
+#   convert_domain, convert_integrand and solver(f, domain, result)
+
+# generic domain conversions (extensions must opt-in to these explicitly)
+convert_domain_generic(d::Domain.Segment{<:Number,<:Number}) =
+    (d.x1, d.x2)
+convert_domain_generic(d::Domain.Box{N,<:NTuple{N,Number},<:NTuple{N,Number}}) where {N} =
+    (d.mins, d.maxs)
+# Deal with Infinity - see infinity.jl
+convert_domain_generic(d::Domain.Segment) = convert_domain_generic(transform_domain(d))
+convert_domain_generic(d::Domain.Box) = convert_domain_generic(transform_domain(d))
+
+# generic integrand conversions (extensions must opt-in to these explicitly)
+function convert_integrand_generic(i::Integral{Missing}, domain, args; params...)
+    f = integrand(i)
+    f´(t) = jacobian(t, domain) * f(change_of_variables(t, domain)..., args...; params...)
+    return f´
+end
+
+function convert_integrand_generic(i::Integral, domain, args; params...)
+    f = integrand(i)
+    f´(out, t) = jacobian(t, domain) * f(out, change_of_variables(t, domain)..., args...; params...)
+    return f´
+end
+
+# failures
+convert_domain(d::AbstractDomain, s::AbstractBackend) =
+    throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for this backend $(solvername(s)), or solver backend not loaded."))
+
+convert_integrand(i::Integral, domain, args; params...) =
+    throw(ArgumentError("No conversion method for the integrand defined for this backend $(solvername(i)), or solver backend not loaded."))
+
+(s::AbstractBackend)(f, domain, result) =
     error("The integral solver solver for $(nameof(typeof(s))) is not loaded.")
 
 ## Show ##

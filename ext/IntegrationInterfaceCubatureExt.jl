@@ -4,20 +4,25 @@ using Cubature
 using IntegrationInterface
 import IntegrationInterface as II
 
-# supported domains (no need to deal with Domain.Functional here)
-II.check_domain_solver(::Type{<:Union{Domain.Box}}, ::Backend.Cubature) = nothing
+II.convert_domain(s::Domain.Box, ::Backend.Cubature) = I.convert_domain_generic(s)
 
-II.convert_domain(s::Domain.Box, ::Backend.Cubature) = (s.mins, s.maxs)
+# Scalar case is easy
+II.convert_integrand(i::II.Integral{Missing,<:Backend.Cubature}, domain, args; params...) =
+    II.convert_integrand_generic(i, domain, args; params...)
 
-(s::Backend.Cubature)(f, domain, ::Missing, args; params...) =
-	hcubature(point -> f(point..., args...; params...), II.convert_domain(domain, s, args)...; s.opts...) |> first
+# Cubature only understands Scalar or Vector{Float32} arguments. We must serialize/deserialize
+function II.convert_integrand(i::Integral{<:Any,<:Backend.Cubature}, d, args; params...)
+    f! = II.integrand(i)
+    fd!(t, out) = jacobian(t, d) * f!(II.deserialize_array(t, out), change_of_variables(t, d)..., args...; params...)
+    return fd!
+end
+
+(s::Backend.Cubature)(f, domain, ::Missing) = hcubature(f, domain...; s.opts...) |> first
 
 # Cubature requires vectors of Float64, so we serialize/deserialize
-function (s::Backend.Cubature)(f!, domain, result, args; params...)
+function (s::Backend.Cubature)(f!, domain, result)
     v = II.serialize_array(Float64, result)
-    # Could probably use unsafe_deserialize_array here, but we prefer safety.
-    fd!(point, out) = f!(II.deserialize_array(result, out), point..., args...; params...)
-    v .= first(hcubature(length(v), fd!, II.convert_domain(domain, s, args)...; s.opts...))
+    v .= first(hcubature(length(v), f!, domain...; s.opts...))
 	return result
 end
 

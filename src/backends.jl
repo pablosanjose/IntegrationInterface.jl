@@ -1,16 +1,15 @@
-# We bundle AbstractBackends in a submodule to avoid name clashes with their
+# Integration solver backends are provided by external libraries and their extensions
+# Extensions must provide:
+#   - `convert_domain(domain, backend)`: a domain understood by backend, can fall back to
+#     `convert_domain_generic(domain)`
+#   - `convert_integrand(i::Integral, domain, args; params...)`: a function understood by
+#      the backend, can fall back to `convert_domain_generic(domain)`
+#   - `(::Backend)(integrand::Function, domain, result)`: call to actual implementation,
+#     once `integrand` and `domain` have been converted.
+#
+# We bundle all AbstractBackends in a Backend submodule to avoid name clashes with their
 # respective solver packages.
 
-abstract type AbstractBackend end
-
-# Support for Domain.Functional conversion for all backends. This dispatches to the
-# domain-specific convert_domain method, which is defined by each backend extension
-convert_domain(d::Domain.Functional, s::AbstractBackend, args) =
-    convert_domain(d(args...), s)
-convert_domain(d::AbstractDomain, s::AbstractBackend, _) =
-    convert_domain(d, s)
-convert_domain(::AbstractDomain, s::AbstractBackend) =
-    throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for this backend. Forgot `using` the package for backend $(solvername(s))?"))
 
 ## Collection of backend solver types ##
 module Backend

@@ -4,11 +4,11 @@
 
 This package aims to be a lightweight, faster-loading alternative to the excellent [Integrals.jl](https://github.com/SciML/Integrals.jl) from the SciML ecosystem. IntegrationInterface.jl offers an interface to perform n-dimensional numerical integrals of scalars, arrays or more general objects, over a domain $D$.
 
-$$J(\text{args}...; \text{params}...) = \int_{D(\text{args}...)} d^n x f(\boldsymbol x..., \text{args}...; \text{params}...)$$
+$$J(\text{args}...; \text{params}...) = \int_{D(\text{args}...; \text{params}...)} d^n x f(\boldsymbol x..., \text{args}...; \text{params}...)$$
 
 The general interface reads
 ```julia
-julia> J = integral(f, domain; solver::AbstractBackend = Backend.QuadGK(), result = missing)
+julia> J = integral(f, domain; solver::AbstractBackend = default_solver(domain), result = missing)
 ```
 This produces an `J::Integral` object. Possible domains are produced with `Domain.Segment` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
 
@@ -41,9 +41,9 @@ julia> J()
 
 As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding solvers in `IntegralSolvers` are
 
-- QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, for 1D integrals over a `Domain.Segment`)
-- Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`, for n-D integrals over a `Domain.Box`)
-- HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, for n-D integrals in a `Domain.Box`)
+- QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, default for `Domain.Segment` domains)
+- HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, default for `Domain.Box` domains)
+- Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`)
 
 We also provide a `Backend.Quadrature((nodes, weights))` solver that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
 ```julia
@@ -127,3 +127,19 @@ julia> J()
 
 ```
 where we have passed a function to the `Domain.Segment` instead of the segment nodes.
+
+Some backends support using `Inf` to express unbounded domains. If that is not supported, we provide `Infinity(point::Number)` that can be used instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `D = Domain.Box((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))))`. Note that it is a `Domain.Functional` object that depends on `σ`. We can integrate a Gaussian over `D`, which gives `π` for `σ = 1`
+
+```julia
+julia> f(x, y; σ = 1) = exp(-0.5*(x^2+y^2)/σ^2);
+
+julia> J = integral(f, D)
+Integral
+  Mutating   : false
+  Domain     : Functional{Box}
+  Solver     : HCubature
+  Integrand  : f
+
+julia> J(; σ = 1)
+3.141592652846476
+```
