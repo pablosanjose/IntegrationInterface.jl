@@ -15,6 +15,13 @@ end
 # represents an infinite ray passing through a point (direction fixed by another point´)
 struct Infinity{T}
     point::T
+    function Infinity{T}(point) where {T}
+        isinf(point) && throw(ArgumentError("Ininity(Inf) not allowed"))
+        return new(point)
+    end
 end
 
+Infinity(point::T) where {T} = Infinity{T}(point)
+
 const NumberOrInfinity = Union{Number,Infinity}
+const ComplexOrReal = Union{Real,Complex}

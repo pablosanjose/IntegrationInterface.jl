@@ -5,19 +5,19 @@
 serialize_array(::Type{T}, a::AbstractArray) where {T} = reinterpret(T, serialize_array(a))
 serialize_array(a::AbstractArray) = vec(a)
 
-deserialize_array(a::AbstractArray{T}, v::AbstractArray) where {T} =
-    deserialize_array(a, reinterpret(T, v))
-deserialize_array(a::AbstractArray{T}, v::AbstractArray{T}) where {T} =
-    (check_deserializer(a, v); unsafe_deserialize_array(a, v))
+deserialize_array(v::AbstractArray, a::AbstractArray{T}) where {T} =
+    deserialize_array(reinterpret(T, v), a)
+deserialize_array(v::AbstractArray{T}, a::AbstractArray{T}) where {T} =
+    (check_deserializer(v, a); unsafe_deserialize_array(v, a))
 
 # assumes equal eltype T and compatible size
-unsafe_deserialize_array(::AbstractArray{T,N}, v::AbstractArray{T,N}) where {T,N} = v
-unsafe_deserialize_array(a::AbstractArray, v::AbstractArray) = reshape(v, size(a))
+unsafe_deserialize_array(v::AbstractArray{T,N}, ::AbstractArray{T,N}) where {T,N} = v
+unsafe_deserialize_array(v::AbstractArray, a::AbstractArray) = reshape(v, size(a))
 
-check_deserializer(a, v) =
-    size(serialize(a)) == size(v) ||
-        argerror("Wrong size of serialized array, expected $(size(serialize(a))), got $(size(v))")
+check_deserializer(v, a) =
+    size(serialize_array(a)) == size(v) ||
+        throw(ArgumentError("Wrong size of serialized array, expected $(size(serialize_array(a))), got $(size(v))"))
 
-check_deserializer(a, v::AbstractVector) =
-    length(serialize(a)) == length(v) ||
-        argerror("Wrong length of serialized array, expected $(length(serialize(a))), got $(length(v))")
+check_deserializer(v, a::AbstractVector) =
+    length(serialize_array(a)) == length(v) ||
+        throw(ArgumentError("Wrong length of serialized array, expected $(length(serialize_array(a))), got $(length(v))"))
