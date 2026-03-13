@@ -44,8 +44,7 @@ integrate(i::Integral, domain, args; params...) =
 # non-mutating version
 function integrate(i::Integral{Missing}, domain::Domain.Sum, args; params...)
     result = sum(ungroup(domain)) do subdomain
-        subdomain´ = evaluate_domain(subdomain, args; params...)
-        integrate(i, convert_domain(subdomain´, i.solver), args; params...)
+        integrate(i, evaluate_domain(subdomain, args; params...), args; params...)
     end
     return result
 end
@@ -54,8 +53,7 @@ end
 function integrate(i::Integral, domain::Domain.Sum, args; params...)
     resultsum = zero(result(i))
     foreach(ungroup(domain)) do subdomain
-        subdomain´ = evaluate_domain(subdomain, args; params...)
-        resultsum .+= integrate(i, convert_domain(subdomain´, i.solver), args; params...)
+        resultsum .+= integrate(i, evaluate_domain(subdomain, args; params...), args; params...)
     end
     return resultsum
 end

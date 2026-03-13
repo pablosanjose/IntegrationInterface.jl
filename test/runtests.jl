@@ -132,3 +132,12 @@ end
     J4 = f |> integral(Domain.Box((-1, 0, -Infinity(2+3im)),(1, 1, 2+im)))
     @test J1() ≈ J2() ≈ J3() ≈ J4()
 end
+
+
+@testset "Domain sums" begin
+    f(x) = 1/(x^2+1)
+    J = integral(f, Domain.Segment(0, 1, 1+2im, -1+2im, -1, 0))
+    @test J() ≈ π
+    f(x) = 1/(x-im)
+    @test J() ≈ 2π*im
+end
