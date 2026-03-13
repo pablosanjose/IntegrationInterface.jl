@@ -10,7 +10,7 @@ The general interface reads
 ```julia
 julia> J = integral(f, domain; solver::AbstractBackend = default_solver(domain), result = missing)
 ```
-This produces an `J::Integral` object. Possible domains are produced with `Domain.Segment` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
+This produces an `J::Integral` object. Possible domains are produced with `Domain.Line` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
 
 Mutating functions `f!(out, x..., args...; params...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
@@ -41,7 +41,7 @@ julia> J()
 
 As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding solvers in `IntegralSolvers` are
 
-- QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, default for `Domain.Segment` domains)
+- QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, default for `Domain.Line` domains)
 - HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, default for `Domain.Box` domains)
 - Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`)
 
@@ -51,17 +51,17 @@ julia> using FastGaussQuadrature, QuadGK
 
 julia> f(x) = cos(x);
 
-julia> J1 = integral(f, Domain.Segment(3,5); solver = Backend.Quadrature(gausslegendre(10)))
+julia> J1 = integral(f, Domain.Line(3,5); solver = Backend.Quadrature(gausslegendre(10)))
 Integral
   Mutating   : false
-  Domain     : Segment(3, 5)
+  Domain     : Line(3, 5)
   Solver     : Quadrature
   Integrand  : f
 
-julia> J2 = integral(f, Domain.Segment(3,5); solver = Backend.QuadGK())
+julia> J2 = integral(f, Domain.Line(3,5); solver = Backend.QuadGK())
 Integral
   Mutating   : false
-  Domain     : Segment(3, 5)
+  Domain     : Line(3, 5)
   Solver     : QuadGK
   Integrand  : f
 
@@ -82,14 +82,14 @@ This integral can be evaluated either as one adaptive `HCubature` or two nested 
 julia> f(x,y) = (x-y)^2 * cos(x+y)
 f (generic function with 2 methods)
 
-julia> J1 = f |> integral(Domain.Segment(0,1)) |> integral(Domain.Segment(2,3))
+julia> J1 = f |> integral(Domain.Line(0,1)) |> integral(Domain.Line(2,3))
 Integral
   Mutating   : false
-  Domain     : Segment(2, 3)
+  Domain     : Line(2, 3)
   Solver     : QuadGK
   Integrand  : Integral
     Mutating   : false
-    Domain     : Segment(0, 1)
+    Domain     : Line(0, 1)
     Solver     : QuadGK
     Integrand  : f
 
@@ -103,7 +103,7 @@ Integral
 julia> (J1(), J2())
 (-3.800374064781164, -3.800374064812097)
 ```
-Note the currying syntax used above for `J1`. It is equivalent to `J1 = integral(integral(f, Domain.Segment(0,1)), Domain.Segment(2,3))`.
+Note the currying syntax used above for `J1`. It is equivalent to `J1 = integral(integral(f, Domain.Line(0,1)), Domain.Line(2,3))`.
 
 We can also make inner domains depend on outer integration variables. For example,
 
@@ -111,14 +111,14 @@ $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = f |> integral(Domain.Segment(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> integral(Domain.Segment(-1,1))
+julia> J = f |> integral(Domain.Line(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> integral(Domain.Line(-1,1))
 Integral
   Mutating   : false
-  Domain     : Segment(-1, 1)
+  Domain     : Line(-1, 1)
   Solver     : QuadGK
   Integrand  : Integral
     Mutating   : false
-    Domain     : Functional{Segment}
+    Domain     : Functional{Line}
     Solver     : QuadGK
     Integrand  : f
 
@@ -126,7 +126,7 @@ julia> J()
 1.324825188363749
 
 ```
-where we have passed a function to the `Domain.Segment` instead of the segment nodes.
+where we have passed a function to the `Domain.Line` instead of the line nodes.
 
 Some backends support using `Inf` to express unbounded domains. If that is not supported, we provide `Infinity(point::Number)` that can be used instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `D = Domain.Box((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))))`. Note that it is a `Domain.Functional` object that depends on `σ`. We can integrate a Gaussian over `D`, which gives `π` for `σ = 1`
 

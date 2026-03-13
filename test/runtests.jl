@@ -10,39 +10,39 @@ const II = IntegrationInterface
     # basics
     f(x) = cos(x)
     f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
-    J = integral(f, Domain.Segment(0,π/2))
+    J = integral(f, Domain.Line(0,π/2))
     @test II.solver(J) isa Backend.QuadGK     #default
     @test J() ≈ 1
     @test J(2; σ = 1) ≈ π/2
     @test J(1; σ = 0, λ = 1) ≈ 0.5*(1+exp(-π/2))
 
     # Infs
-    J = integral(f, Domain.Segment(0, Inf))
+    J = integral(f, Domain.Line(0, Inf))
     @test J(1; σ = 0, λ = 1) ≈ 0.5
-    J = integral(f, Domain.Segment(-Inf, Inf))
+    J = integral(f, Domain.Line(-Inf, Inf))
     @test J(1; σ = 0, λ = 1) ≈ 1.0
-    J = integral(f, Domain.Segment(0,Infinity(1)))
+    J = integral(f, Domain.Line(0,Infinity(1)))
     @test J(1; σ = 0, λ = 1) ≈ 0.5
-    J = integral(f, Domain.Segment(-Infinity(1), Infinity(1)))
+    J = integral(f, Domain.Line(-Infinity(1), Infinity(1)))
     @test J(1; σ = 0, λ = 1) ≈ 1.0
      # mixing Inf with Infinity is ambiguous
-    @test_throws ArgumentError integral(f, Domain.Segment(-Infinity(1), Inf))
+    @test_throws ArgumentError integral(f, Domain.Line(-Infinity(1), Inf))
 
     # bounds as args
     g(x, _...) = exp(-0.5*x^2)
-    J = integral(g, Domain.Segment((a,b) -> (a,b)))
+    J = integral(g, Domain.Line((a,b) -> (a,b)))
     @test J(0, Inf) ≈ -J(0, -Inf) ≈ - J(Inf, 0) ≈  J(-Inf, 0) ≈ √(π/2)
     @test J(-Inf, Inf) ≈ -J(Inf, -Inf) ≈ J(-Infinity(1), Infinity(1)) ≈ √(2π)
 
     # complex version
     h(x, _...) = exp(x)
-    J = integral(h, Domain.Segment((a,b) -> (a,b)))
+    J = integral(h, Domain.Line((a,b) -> (a,b)))
     @test J(1+2im, 3.0+3im) ≈  h(3.0+3im, 0, 0) - h(1+2im, 0, 0)
 
     # in-place version
     result = zeros(Float64, 10)
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
-    J = integral(g!, Domain.Segment((a,b) -> (a,b)); result)
+    J = integral(g!, Domain.Line((a,b) -> (a,b)); result)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
 end
 
@@ -112,23 +112,23 @@ end
 @testset "Nested" begin
     # 2D
     f(x, y) = cos(x^2+y)*exp(-0.5*(x^2+2y^2))
-    J1 = f |> integral(Domain.Segment(-Inf, Inf)) |> integral(Domain.Segment(-Infinity(1),Infinity(1)))
+    J1 = f |> integral(Domain.Line(-Inf, Inf)) |> integral(Domain.Line(-Infinity(1),Infinity(1)))
     J2 = f |> integral(Domain.Box((-Infinity(1), -Infinity(1)),(Infinity(1), Infinity(1))))
     @test J1() ≈ J2()
-    J1 = f |> integral(Domain.Segment(0, 20)) |> integral(Domain.Segment(-Infinity(1),Infinity(5)))
+    J1 = f |> integral(Domain.Line(0, 20)) |> integral(Domain.Line(-Infinity(1),Infinity(5)))
     J2 = f |> integral(Domain.Box((0, -Infinity(1)),(20, Infinity(1))))
     @test J1() ≈ J2()
     # 3D
     f(x, y, z) = cos(x+2y+3z)
-    J1 = f |> integral(Domain.Segment(-1, 1)) |> integral(Domain.Box((0, 0),(1, 2+im)))
-    J2 = f |> integral(Domain.Box((-1, 0),(1, 1))) |> integral(Domain.Segment(0, 2+im))
-    J3 = f |> integral(Domain.Segment(-1, 1)) |> integral(Domain.Segment(0, 1)) |> integral(Domain.Segment(0, 2+im))
+    J1 = f |> integral(Domain.Line(-1, 1)) |> integral(Domain.Box((0, 0),(1, 2+im)))
+    J2 = f |> integral(Domain.Box((-1, 0),(1, 1))) |> integral(Domain.Line(0, 2+im))
+    J3 = f |> integral(Domain.Line(-1, 1)) |> integral(Domain.Line(0, 1)) |> integral(Domain.Line(0, 2+im))
     J4 = f |> integral(Domain.Box((-1, 0, 0),(1, 1, 2+im)))
     @test J1() ≈ J2() ≈ J3() ≈ J4()
     f(x, y, z) = exp(-abs(x+2y+3z))
-    J1 = f |> integral(Domain.Segment(-1, 1)) |> integral(Domain.Box((0, -Infinity(2+3im)),(1, 2+im)))
-    J2 = f |> integral(Domain.Box((-1, 0),(1, 1))) |> integral(Domain.Segment(-Infinity(2+3im), 2+im))
-    J3 = f |> integral(Domain.Segment(-1, 1)) |> integral(Domain.Segment(0, 1)) |> integral(Domain.Segment(-Infinity(2+3im), 2+im))
+    J1 = f |> integral(Domain.Line(-1, 1)) |> integral(Domain.Box((0, -Infinity(2+3im)),(1, 2+im)))
+    J2 = f |> integral(Domain.Box((-1, 0),(1, 1))) |> integral(Domain.Line(-Infinity(2+3im), 2+im))
+    J3 = f |> integral(Domain.Line(-1, 1)) |> integral(Domain.Line(0, 1)) |> integral(Domain.Line(-Infinity(2+3im), 2+im))
     J4 = f |> integral(Domain.Box((-1, 0, -Infinity(2+3im)),(1, 1, 2+im)))
     @test J1() ≈ J2() ≈ J3() ≈ J4()
 end
@@ -136,10 +136,10 @@ end
 
 @testset "Domain sums" begin
     f(x) = 1/(x^2+1)
-    J = integral(f, Domain.Segment(0, 1, 1+2im, -1+2im, -1, 0))
+    J = integral(f, Domain.Line(0, 1, 1+2im, -1+2im, -1, 0))
     @test J() ≈ π
     f(x) = 1/(x-im)
     @test J() ≈ 2π*im
-    J = integral(f, Domain.Segment([0, 1, 1+2im, -1+2im, -1, 0]); solver = Backend.QuadGK())
+    J = integral(f, Domain.Line([0, 1, 1+2im, -1+2im, -1, 0]); solver = Backend.QuadGK())
     @test J() ≈ 2π*im
 end
