@@ -34,8 +34,8 @@ struct Functional{D<:AbstractDomain,F} <: AbstractDomain
     f::F
 end
 
-struct Sum{T<:NTuple{<:Any,AbstractDomain}} <: AbstractDomain
-    subdomains::T
+struct Sum{T} <: AbstractDomain
+    subdomains::T   # subdomains should be an iterator over AbstractDomains
 end
 
 ## Sanitization ##
@@ -76,6 +76,10 @@ Segment(s::NTuple{2,NumberOrInfinity}...) = Sum(Segment.(s))
 function Segment(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
     nodes´ = (node1, node2, node3, nodes...)
     return Sum(Segment.(Base.front(nodes´), Base.tail(nodes´)))
+end
+
+function Segment(nodes::AbstractVector)
+    return Sum(Segment(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
 end
 
 (::Type{D})(f::Function) where {D<:AbstractDomain} = Functional(D, f)

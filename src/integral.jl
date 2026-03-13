@@ -13,7 +13,7 @@ default_solver(::Domain.Functional{<:Domain.Segment}) = Backend.QuadGK()
 default_solver(::Domain.Box) = Backend.HCubature()
 default_solver(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
 default_solver(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
-default_solver(d) = throw(ArgumentError("No default solver exists for domain $(domainname(d))"))
+default_solver(d) = throw(ArgumentError("No default solver exists for domain $(domainname(d)), please specify one explicitly."))
 
 ismutating(i::Integral) = !ismissing(i.result)
 

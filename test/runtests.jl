@@ -140,4 +140,6 @@ end
     @test J() ≈ π
     f(x) = 1/(x-im)
     @test J() ≈ 2π*im
+    J = integral(f, Domain.Segment([0, 1, 1+2im, -1+2im, -1, 0]); solver = Backend.QuadGK())
+    @test J() ≈ 2π*im
 end
