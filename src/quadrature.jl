@@ -1,9 +1,9 @@
 ## Quadrature ##
 # this backend, unlike other solvers, does not require an extension
-# we use the generic conversions to deal with Infinity segments, and then scale the domain
+# we use the generic conversions to deal with Infinity lines, and then scale the domain
 # to [-1,1] to use the quadrature weights
 
-convert_domain(s::Domain.Segment, ::Backend.Quadrature) =
+convert_domain(s::Domain.Line, ::Backend.Quadrature) =
     convert_domain_generic(s)
 
 convert_integrand(i::Integral{<:Any,<:Backend.Quadrature}, domain, args; params...) =
