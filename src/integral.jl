@@ -32,16 +32,16 @@ domain(i::Integral) = i.domain
 domainname(i::Integral) = domainname(domain(i))
 
 ## call syntax (scalar and in-place) ##
-(i::Integral{Missing})(args...; params...) =
-    integrate(i, evaluate_domain(domain(i), args; params...), args; params...)
 (i::Integral)(args...; params...) =
-    copy(integrate(i, evaluate_domain(domain(i), args; params...), args; params...))
+    integrate(i, evaluate_domain(domain(i), args; params...), args; params...)
 
+# integrate can assume the domain is not a Domain.Functional.
+# We just need backend-specific conversions
 integrate(i::Integral, domain, args; params...) =
     i.solver(convert_integrand(i, domain, args; params...), convert_domain(domain, i.solver), i.result)
 
 # Any Domain Sum is handled by summing over the domains ##
-# non-mutating
+# non-mutating version
 function integrate(i::Integral{Missing}, domain::Domain.Sum, args; params...)
     result = sum(ungroup(domain)) do subdomain
         subdomain´ = evaluate_domain(subdomain, args; params...)
@@ -50,7 +50,7 @@ function integrate(i::Integral{Missing}, domain::Domain.Sum, args; params...)
     return result
 end
 
-# mutating
+# mutating version
 function integrate(i::Integral, domain::Domain.Sum, args; params...)
     resultsum = zero(result(i))
     foreach(ungroup(domain)) do subdomain
@@ -67,26 +67,35 @@ evaluate_domain(d::AbstractDomain, args; params...) = d
 #   convert_domain, convert_integrand and solver(f, domain, result)
 
 # generic domain conversions (extensions must opt-in to these explicitly)
-convert_domain_generic(d::Domain.Segment{<:Number,<:Number}) =
+convert_domain_generic(d::Domain.Segment{<:Real,<:Real}) =
     (d.x1, d.x2)
-convert_domain_generic(d::Domain.Box{N,<:NTuple{N,Number},<:NTuple{N,Number}}) where {N} =
+convert_domain_generic(d::Domain.Box{N,<:NTuple{N,Real},<:NTuple{N,Real}}) where {N} =
     (d.mins, d.maxs)
-# Deal with Infinity - see infinity.jl
+
+# Deal with Infinity and complex-to-real conversions - see changeofvariables.jl
 convert_domain_generic(d::Domain.Segment) = convert_domain_generic(transform_domain(d))
 convert_domain_generic(d::Domain.Box) = convert_domain_generic(transform_domain(d))
 
 # generic integrand conversions (extensions must opt-in to these explicitly)
-function convert_integrand_generic(i::Integral{Missing}, domain, args; params...)
+function convert_integrand_generic(i::Integral{Missing}, domain, args; post = identity, params...)
     f = integrand(i)
-    f´(t) = jacobian(t, domain) * f(change_of_variables(t, domain)..., args...; params...)
+    f´(t) = post(jacobian(t, domain) * f(change_of_variables(t, domain)..., args...; params...))
     return f´
 end
 
-function convert_integrand_generic(i::Integral, domain, args; params...)
-    f = integrand(i)
-    f´(out, t) = jacobian(t, domain) * f(out, change_of_variables(t, domain)..., args...; params...)
-    return f´
+function convert_integrand_generic(i::Integral, domain, args; post = identity, params...)
+    f! = integrand(i)
+    function f!´(out, t)
+        f!(out, change_of_variables(t, domain)..., args...; params...)
+        out .*= jacobian(t, domain)
+        maybe_post!(out, post)
+        return out
+    end
+    return f!´
 end
+
+maybe_post!(out, ::typeof(identity)) = out
+maybe_post!(out, post) = (out .= post.(out))
 
 # failures
 convert_domain(d::AbstractDomain, s::AbstractBackend) =
