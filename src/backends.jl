@@ -1,4 +1,4 @@
-# Integration solver backends are provided by external libraries and their extensions
+# Integration backends are provided by external libraries and their extensions
 # Extensions must provide:
 #   - `convert_domain(domain, backend)`: a domain understood by backend, can fall back to
 #     `convert_domain_generic(domain)`
@@ -8,10 +8,10 @@
 #     once `integrand` and `domain` have been converted.
 #
 # We bundle all AbstractBackends in a Backend submodule to avoid name clashes with their
-# respective solver packages.
+# respective backend packages.
 
 
-## Collection of backend solver types ##
+## Collection of backend types ##
 module Backend
 
 using IntegrationInterface: AbstractBackend

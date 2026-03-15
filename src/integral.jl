@@ -1,31 +1,31 @@
 ## API ##
-function integral(f::F, domain::AbstractDomain; result = missing, solver::AbstractBackend = default_solver(domain)) where {F}
-	return Integral(f, result, domain, solver)
+function integral(f::F, domain::AbstractDomain; result = missing, backend::AbstractBackend = default_backend(domain)) where {F}
+	return Integral(f, result, domain, backend)
 end
 
 # currying version
 integral(domain; kw...) = f -> integral(f, domain; kw...)
 
 # Can be overridden for user-defined f types and domains
-default_solver(::Domain.Line) = Backend.QuadGK()
-default_solver(::Domain.Sum{<:NTuple{<:Any,Domain.Line}}) = Backend.QuadGK()
-default_solver(::Domain.Functional{<:Domain.Line}) = Backend.QuadGK()
-default_solver(::Domain.Box) = Backend.HCubature()
-default_solver(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
-default_solver(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
-default_solver(d) = throw(ArgumentError("No default solver exists for domain $(domainname(d)), please specify one explicitly."))
+default_backend(::Domain.Line) = Backend.QuadGK()
+default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Line}}) = Backend.QuadGK()
+default_backend(::Domain.Functional{<:Domain.Line}) = Backend.QuadGK()
+default_backend(::Domain.Box) = Backend.HCubature()
+default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
+default_backend(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
+default_backend(d) = throw(ArgumentError("No default backend exists for domain $(domainname(d)), please specify one explicitly."))
 
 ismutating(i::Integral) = !ismissing(i.result)
 
 integrand(i::Integral) = i.integrand
 
-solver(i::Integral) = i.solver
+backend(i::Integral) = i.backend
 
 result(i::Integral) = i.result
 
-solvername(i::Integral) = solvername(solver(i))
-solvername(s::AbstractBackend) = nameof(typeof(s))
-solvername(s::Type{<:AbstractBackend}) = nameof(s)
+backendname(i::Integral) = backendname(backend(i))
+backendname(s::AbstractBackend) = nameof(typeof(s))
+backendname(s::Type{<:AbstractBackend}) = nameof(s)
 
 domain(i::Integral) = i.domain
 
@@ -38,7 +38,7 @@ domainname(i::Integral) = domainname(domain(i))
 # integrate can assume the domain is not a Domain.Functional.
 # We just need backend-specific conversions
 integrate(i::Integral, domain, args; params...) =
-    i.solver(convert_integrand(i, domain, args; params...), convert_domain(domain, i.solver), i.result)
+    i.backend(convert_integrand(i, domain, args; params...), convert_domain(domain, i.backend), i.result)
 
 # Any Domain Sum is handled by summing over the domains ##
 # non-mutating version
@@ -62,7 +62,7 @@ evaluate_domain(d::Domain.Functional, args; params...) = d(args...; params...)
 evaluate_domain(d::AbstractDomain, args; params...) = d
 
 ## Extension fallbacks and generics ##
-#   convert_domain, convert_integrand and solver(f, domain, result)
+#   convert_domain, convert_integrand and backend(f, domain, result)
 
 # generic domain conversions (extensions must opt-in to these explicitly)
 convert_domain_generic(d::Domain.Line{<:Real,<:Real}) =
@@ -97,13 +97,13 @@ maybe_post!(out, post) = (out .= post.(out))
 
 # failures
 convert_domain(d::AbstractDomain, s::AbstractBackend) =
-    throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for this backend $(solvername(s)), or solver backend not loaded."))
+    throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for this backend $(backendname(s)), or integration backend not loaded."))
 
 convert_integrand(i::Integral, domain, args; params...) =
-    throw(ArgumentError("No conversion method for the integrand defined for this backend $(solvername(i)), or solver backend not loaded."))
+    throw(ArgumentError("No conversion method for the integrand defined for this backend $(backendname(i)), or integration backend not loaded."))
 
 (s::AbstractBackend)(f, domain, result) =
-    error("The integral solver solver for $(nameof(typeof(s))) is not loaded.")
+    error("The integration backend for $(nameof(typeof(s))) is not loaded.")
 
 ## Show ##
 
@@ -115,7 +115,7 @@ function Base.show(io::IO, J::Integral)
     print(io, summary(J), "\n",
 "$i  Mutating   : $(ismutating(J))
 $i  Domain     : $(domainname(J))
-$i  Solver     : $(solvername(J))
+$i  Backend    : $(backendname(J))
 $i  Integrand  : ")
   print(ioindent, integrand(J))
 end

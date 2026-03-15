@@ -11,7 +11,7 @@ const II = IntegrationInterface
     f(x) = cos(x)
     f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
     J = integral(f, Domain.Line(0,π/2))
-    @test II.solver(J) isa Backend.QuadGK     #default
+    @test II.backend(J) isa Backend.QuadGK     #default
     @test J() ≈ 1
     @test J(2; σ = 1) ≈ π/2
     @test J(1; σ = 0, λ = 1) ≈ 0.5*(1+exp(-π/2))
@@ -50,7 +50,7 @@ end
     f(x, y) = cos(x+y)
     f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
     J = integral(f, Domain.Box((0,0),(π/2,π)))
-    @test II.solver(J) isa Backend.HCubature   # default
+    @test II.backend(J) isa Backend.HCubature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
 
@@ -78,14 +78,14 @@ end
 @testset "Cubature" begin
     f(x, y) = cos(x+y)
     f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
-    J = integral(f, Domain.Box((0,0),(π/2,π)); solver = Backend.Cubature())
-    @test II.solver(J) isa Backend.Cubature   # default
+    J = integral(f, Domain.Box((0,0),(π/2,π)); backend = Backend.Cubature())
+    @test II.backend(J) isa Backend.Cubature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
 
     # bounds as args
     g(x, y, _...) = cos(x+y)
-    J = integral(g, Domain.Box((a,b) -> ((a,a), (b,b))); solver = Backend.Cubature())
+    J = integral(g, Domain.Box((a,b) -> ((a,a), (b,b))); backend = Backend.Cubature())
     @test J(-1, 2) ≈ 4*cos(1)*sin(1.5)^2
 
     # complex domains (auto-converted to real)
@@ -93,19 +93,19 @@ end
 
     g!(out, x, y, _...) = (out .= cos(x+y))
     result = [0.0+0im]
-    J = integral(g!, Domain.Box((a,b) -> ((a,a), (b,b))); result, solver = Backend.Cubature())
+    J = integral(g!, Domain.Box((a,b) -> ((a,a), (b,b))); result, backend = Backend.Cubature())
     @test J(-1-im, 1+im) === result ≈ [4*sin(1 + im)^2]
 
     # Infs
     g(x, y, _...) = exp(-0.5*(x^2+y^2))
-    J = integral(g, Domain.Box((a,b) -> ((a,a), (b,b))); solver = Backend.Cubature())
+    J = integral(g, Domain.Box((a,b) -> ((a,a), (b,b))); backend = Backend.Cubature())
     @test_throws ArgumentError J(-Inf, Inf)     # HCubature doesn't like unbounded domains
     @test J(-Infinity(1), Infinity(1)) ≈ 2π     # HCubature doesn't like unbounded domains
 
     # in-place version
     result = zeros(Float64, 10)
     g!(out, x, y, _...) = (out .= exp.(-(x+y) .* eachindex(out)))
-    J = integral(g!, Domain.Box((a,b) -> ((a,a), (b,b))); result, solver = Backend.Cubature())
+    J = integral(g!, Domain.Box((a,b) -> ((a,a), (b,b))); result, backend = Backend.Cubature())
     @test J(0, 1) === result ≈ ((exp.( .- eachindex(result)) .- 1) ./ eachindex(result)) .^ 2
 end
 
@@ -140,6 +140,6 @@ end
     @test J() ≈ π
     f(x) = 1/(x-im)
     @test J() ≈ 2π*im
-    J = integral(f, Domain.Line([0, 1, 1+2im, -1+2im, -1, 0]); solver = Backend.QuadGK())
+    J = integral(f, Domain.Line([0, 1, 1+2im, -1+2im, -1, 0]); backend = Backend.QuadGK())
     @test J() ≈ 2π*im
 end
