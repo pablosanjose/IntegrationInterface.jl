@@ -8,7 +8,7 @@ $$J(\text{args}...; \text{params}...) = \int_{D(\text{args}...; \text{params}...
 
 The general interface reads
 ```julia
-julia> J = integral(f, domain; backend::AbstractBackend = default_backend(domain), result = missing)
+julia> J = integral(f, domain; backend::AbstractBackend = default_backend(domain), result = nothing)
 ```
 This produces an `J::Integral` object. Possible domains are produced with `Domain.Line` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
 

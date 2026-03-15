@@ -7,7 +7,7 @@ abstract type AbstractBackend end
 # general callable object representing an integral over a domain using a backend
 struct Integral{R,S<:AbstractBackend,D<:AbstractDomain,F}
     integrand::F	# usually a function, but can be other kind of object
-    result::R		# will be Missing if not in-place
+    result::R		# will be `nothing` if not in-place
     domain::D		# Tuple of AbstractDomains or a single AbstractDomain
     backend::S		# object representing the integration  backend(s)
 end

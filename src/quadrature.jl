@@ -9,7 +9,7 @@ convert_domain(s::Domain.Line, ::Backend.Quadrature) =
 convert_integrand(i::Integral{<:Any,<:Backend.Quadrature}, domain, args; params...) =
     convert_integrand_generic(i, domain, args; params...)
 
-function (s::Backend.Quadrature)(f, domain, ::Missing)
+function (s::Backend.Quadrature)(f, domain, ::Nothing)
     xmin, xmax = domain
     Δx = 0.5 * (xmax - xmin)
     result = sum(zip(s.nodes, s.weights); init = zero(float(Δx))) do (t, w)
