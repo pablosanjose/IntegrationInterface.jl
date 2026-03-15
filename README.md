@@ -8,7 +8,7 @@ $$J(\text{args}...; \text{params}...) = \int_{D(\text{args}...; \text{params}...
 
 The general interface reads
 ```julia
-julia> J = integral(f, domain; solver::AbstractBackend = default_solver(domain), result = missing)
+julia> J = integral(f, domain; backend::AbstractBackend = default_backend(domain), result = missing)
 ```
 This produces an `J::Integral` object. Possible domains are produced with `Domain.Line` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
 
@@ -28,41 +28,41 @@ julia> using HCubature
 
 julia> f(x,y) = cos(x-y);
 
-julia> J = integral(f, Domain.Box((-1,-1), (1,1)); solver = Backend.HCubature())
+julia> J = integral(f, Domain.Box((-1,-1), (1,1)); backend = Backend.HCubature())
 Integral
   Mutating   : false
   Domain     : Box((-1, -1), (1, 1))
-  Solver     : HCubature
+  Backend    : HCubature
   Integrand  : f
 
 julia> J()
 2.8322936730937722
 ```
 
-As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding solvers in `IntegralSolvers` are
+As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding backends in `IntegralBackends` are
 
 - QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, default for `Domain.Line` domains)
 - HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, default for `Domain.Box` domains)
 - Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`)
 
-We also provide a `Backend.Quadrature((nodes, weights))` solver that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
+We also provide a `Backend.Quadrature((nodes, weights))` backend that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
 ```julia
 julia> using FastGaussQuadrature, QuadGK
 
 julia> f(x) = cos(x);
 
-julia> J1 = integral(f, Domain.Line(3,5); solver = Backend.Quadrature(gausslegendre(10)))
+julia> J1 = integral(f, Domain.Line(3,5); backend = Backend.Quadrature(gausslegendre(10)))
 Integral
   Mutating   : false
   Domain     : Line(3, 5)
-  Solver     : Quadrature
+  Backend    : Quadrature
   Integrand  : f
 
-julia> J2 = integral(f, Domain.Line(3,5); solver = Backend.QuadGK())
+julia> J2 = integral(f, Domain.Line(3,5); backend = Backend.QuadGK())
 Integral
   Mutating   : false
   Domain     : Line(3, 5)
-  Solver     : QuadGK
+  Backend    : QuadGK
   Integrand  : f
 
 julia> J1(), J2()
@@ -77,7 +77,7 @@ As a concrete example, consider
 
 $$J = \int_2^3 dy\int_0^1 dx (x-y)^2\cos(x+y) $$
 
-This integral can be evaluated either as one adaptive `HCubature` or two nested `QuadGK` (the default solver):
+This integral can be evaluated either as one adaptive `HCubature` or two nested `QuadGK` (the default backend):
 ```julia
 julia> f(x,y) = (x-y)^2 * cos(x+y)
 f (generic function with 2 methods)
@@ -86,18 +86,18 @@ julia> J1 = f |> integral(Domain.Line(0,1)) |> integral(Domain.Line(2,3))
 Integral
   Mutating   : false
   Domain     : Line(2, 3)
-  Solver     : QuadGK
+  Backend    : QuadGK
   Integrand  : Integral
     Mutating   : false
     Domain     : Line(0, 1)
-    Solver     : QuadGK
+    Backend    : QuadGK
     Integrand  : f
 
-julia> J2 = integral(f, Domain.Box((0,2), (1,3)); solver = Backend.HCubature())
+julia> J2 = integral(f, Domain.Box((0,2), (1,3)); backend = Backend.HCubature())
 Integral
   Mutating   : false
   Domain     : Box((0, 2), (1, 3))
-  Solver     : HCubature
+  Backend    : HCubature
   Integrand  : f
 
 julia> (J1(), J2())
@@ -115,11 +115,11 @@ julia> J = f |> integral(Domain.Line(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> integ
 Integral
   Mutating   : false
   Domain     : Line(-1, 1)
-  Solver     : QuadGK
+  Backend    : QuadGK
   Integrand  : Integral
     Mutating   : false
     Domain     : Functional{Line}
-    Solver     : QuadGK
+    Backend    : QuadGK
     Integrand  : f
 
 julia> J()
@@ -137,7 +137,7 @@ julia> J = integral(f, D)
 Integral
   Mutating   : false
   Domain     : Functional{Box}
-  Solver     : HCubature
+  Backend    : HCubature
   Integrand  : f
 
 julia> J(; σ = 1)

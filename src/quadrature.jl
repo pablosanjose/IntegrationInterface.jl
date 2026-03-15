@@ -1,5 +1,5 @@
 ## Quadrature ##
-# this backend, unlike other solvers, does not require an extension
+# this backend, unlike other backends, does not require an extension
 # we use the generic conversions to deal with Infinity lines, and then scale the domain
 # to [-1,1] to use the quadrature weights
 
