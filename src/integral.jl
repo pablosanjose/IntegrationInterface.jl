@@ -97,13 +97,13 @@ maybe_post!(out, post) = (out .= post.(out))
 
 # failures
 convert_domain(d::AbstractDomain, s::AbstractBackend) =
-    throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for this backend $(backendname(s)), or integration backend not loaded."))
+    throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for $(backendname(s)) backend, or backend package not loaded."))
 
 convert_integrand(i::Integral, domain, args; params...) =
-    throw(ArgumentError("No conversion method for the integrand defined for this backend $(backendname(i)), or integration backend not loaded."))
+    throw(ArgumentError("No conversion method for the integrand defined for the $(backendname(i)) backend, or backend package not loaded."))
 
 (s::AbstractBackend)(f, domain, result) =
-    error("The integration backend for $(nameof(typeof(s))) is not loaded.")
+    error("The integration backend package for $(nameof(typeof(s))) is not loaded.")
 
 ## Show ##
 
