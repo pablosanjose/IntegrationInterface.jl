@@ -1,5 +1,5 @@
 ## API ##
-function integral(f::F, domain::AbstractDomain; result = missing, backend::AbstractBackend = default_backend(domain)) where {F}
+function integral(f::F, domain::AbstractDomain; result = nothing, backend::AbstractBackend = default_backend(domain)) where {F}
 	return Integral(f, result, domain, backend)
 end
 
@@ -15,7 +15,7 @@ default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
 default_backend(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
 default_backend(d) = throw(ArgumentError("No default backend exists for domain $(domainname(d)), please specify one explicitly."))
 
-ismutating(i::Integral) = !ismissing(i.result)
+ismutating(i::Integral) = !isnothing(i.result)
 
 integrand(i::Integral) = i.integrand
 
@@ -42,7 +42,7 @@ integrate(i::Integral, domain, args; params...) =
 
 # Any Domain Sum is handled by summing over the domains ##
 # non-mutating version
-function integrate(i::Integral{Missing}, domain::Domain.Sum, args; params...)
+function integrate(i::Integral{Nothing}, domain::Domain.Sum, args; params...)
     result = sum(ungroup(domain)) do subdomain
         integrate(i, evaluate_domain(subdomain, args; params...), args; params...)
     end
@@ -75,7 +75,7 @@ convert_domain_generic(d::Domain.Line) = convert_domain_generic(transform_domain
 convert_domain_generic(d::Domain.Box) = convert_domain_generic(transform_domain(d))
 
 # generic integrand conversions (extensions must opt-in to these explicitly)
-function convert_integrand_generic(i::Integral{Missing}, domain, args; post = identity, params...)
+function convert_integrand_generic(i::Integral{Nothing}, domain, args; post = identity, params...)
     f = integrand(i)
     f´(t) = post(jacobian(t, domain) * f(change_of_variables(t, domain)..., args...; params...))
     return f´
