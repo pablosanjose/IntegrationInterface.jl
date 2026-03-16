@@ -3,6 +3,7 @@ using Test
 using QuadGK
 using HCubature
 using Cubature
+using FastGaussQuadrature
 
 const II = IntegrationInterface
 
@@ -43,6 +44,54 @@ const II = IntegrationInterface
     result = zeros(Float64, 10)
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
     J = integral(g!, Domain.Box1D((a,b) -> (a,b)); result)
+    @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
+end
+
+@testset "Quadrature" begin
+    backend = Backend.Quadrature(gausslegendre(50))
+    # basics 1D
+    f(x) = cos(x)
+    f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
+    J = integral(f, Domain.Box1D(0,π/2); backend)
+    @test II.backend(J) isa Backend.Quadrature     #default
+    @test J() ≈ 1
+    @test J(2; σ = 1) ≈ π/2
+    @test J(1; σ = 0, λ = 1) ≈ 0.5*(1+exp(-π/2))
+
+    # basics 2D
+    f(x, y) = cos(x+y)
+    f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
+    J = integral(f, Domain.Box((0,0),(π/2,π)); backend)
+    @test II.backend(J) isa Backend.Quadrature   # default
+    @test J() ≈ -2
+    @test J(2; λ = 2, σ = 1) ≈ 1.4803924093 atol = 1e-6
+
+    # Infs
+    J = integral(f, Domain.Box1D(0, Inf); backend)
+    @test_throws ArgumentError J(1; σ = 0, λ = 1) ≈ 0.5
+    J = integral(f, Domain.Box1D(-Inf, Inf); backend)
+    @test_throws ArgumentError J(1; σ = 0, λ = 1) ≈ 1.0
+    J = integral(f, Domain.Box1D(0,Infinity(1)); backend)
+    @test J(1; σ = 0, λ = 1) ≈ 0.5 atol = 1e-3
+    J = integral(f, Domain.Box1D(-Infinity(1), Infinity(1)); backend)
+    @test J(1; σ = 0, λ = 1) ≈ 1.0 atol = 1e-3
+     # mixing Inf with Infinity is ambiguous
+    @test_throws ArgumentError integral(f, Domain.Box1D(-Infinity(1), Inf))
+
+    # bounds as args
+    g(x, _...) = exp(-0.5*x^2)
+    J = integral(g, Domain.Box1D((a,b) -> (a,b)); backend)
+    @test J(-Infinity(1), Infinity(1)) ≈ √(2π)
+
+    # complex version
+    h(x, _...) = exp(x)
+    J = integral(h, Domain.Box1D((a,b) -> (a,b)); backend)
+    @test J(1+2im, 3.0+3im) ≈  h(3.0+3im, 0, 0) - h(1+2im, 0, 0)
+
+    # in-place version
+    result = zeros(Float64, 10)
+    g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
+    J = integral(g!, Domain.Box1D((a,b) -> (a,b)); result, backend)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
 end
 
