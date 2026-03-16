@@ -7,8 +7,8 @@ import IntegrationInterface as II
 II.convert_domain(s::Domain.Line, ::Backend.QuadGK) =
     II.convert_domain_generic(s)
 
-II.convert_integrand(i::II.Integral{<:Any,<:Backend.QuadGK}, domain, args; params...) =
-    II.convert_integrand_generic(i, domain, args; params...)
+II.convert_integrand(i::II.Integral{<:Any,<:Backend.QuadGK}, domain, args; kw...) =
+    II.convert_integrand_generic(i, domain, args; kw...)
 
 ## Call ##
 

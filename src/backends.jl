@@ -2,7 +2,7 @@
 # Extensions must provide:
 #   - `convert_domain(domain, backend)`: a domain understood by backend, can fall back to
 #     `convert_domain_generic(domain)`
-#   - `convert_integrand(i::Integral, domain, args; params...)`: a function understood by
+#   - `convert_integrand(i::Integral, domain, args; kw...)`: a function understood by
 #      the backend, can fall back to `convert_domain_generic(domain)`
 #   - `(::Backend)(integrand::Function, domain, result)`: call to actual implementation,
 #     once `integrand` and `domain` have been converted.

@@ -4,7 +4,7 @@
 
 This package aims to be a lightweight, faster-loading alternative to the excellent [Integrals.jl](https://github.com/SciML/Integrals.jl) from the SciML ecosystem. IntegrationInterface.jl offers an interface to perform n-dimensional numerical integrals of scalars, arrays or more general objects, over a domain $D$.
 
-$$J(\text{args}...; \text{params}...) = \int_{D(\text{args}...; \text{params}...)} d^n x f(\boldsymbol x..., \text{args}...; \text{params}...)$$
+$$J(\text{args}...; \text{kw}...) = \int_{D(\text{args}...; \text{kw}...)} d^n x f(\boldsymbol x..., \text{args}...; \text{kw}...)$$
 
 The general interface reads
 ```julia
@@ -12,11 +12,11 @@ julia> J = integral(f, domain; backend::AbstractBackend = default_backend(domain
 ```
 This produces an `J::Integral` object. Possible domains are produced with `Domain.Line` or`Domain.Box`. Here `Backend` and `Domain` are exported submodules of `IntegrationInterface`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments passed to `J`.
 
-Mutating functions `f!(out, x..., args...; params...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
+Mutating functions `f!(out, x..., args...; kw...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
-To compute the integral for a set of `args` and `params`, use the syntax
+To compute the integral for a set of `args` and `kw`, use the syntax
 ```julia
-julia> J(args...; params...)
+julia> J(args...; kw...)
 ```
 In the mutating case, this will also write the value of the integral into `result`.
 
@@ -71,7 +71,7 @@ julia> J1(), J2()
 
 We can also express nested integrals such as
 
-$$J(\text{args}...; \text{params}...) = \int_{D_n} dx_n\dots\int_{D_1} dx_1 f(\boldsymbol{x}, \text{args}...; \text{params}...)$$
+$$J(\text{args}...; \text{kw}...) = \int_{D_n} dx_n\dots\int_{D_1} dx_1 f(\boldsymbol{x}, \text{args}...; \text{kw}...)$$
 
 As a concrete example, consider
 

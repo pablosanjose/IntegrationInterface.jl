@@ -96,7 +96,7 @@ Base.last(d::Box) = d.maxs
 
 # call #
 
-(f::Functional{D})(args...; params...) where {D} = D(f.f(args...; params...)...)
+(f::Functional{D})(args...; kw...) where {D} = D(f.f(args...; kw...)...)
 
 # ungroup domain sums
 

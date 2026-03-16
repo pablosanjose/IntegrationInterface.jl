@@ -6,8 +6,8 @@
 convert_domain(s::Domain.Line, ::Backend.Quadrature) =
     convert_domain_generic(s)
 
-convert_integrand(i::Integral{<:Any,<:Backend.Quadrature}, domain, args; params...) =
-    convert_integrand_generic(i, domain, args; params...)
+convert_integrand(i::Integral{<:Any,<:Backend.Quadrature}, domain, args; kw...) =
+    convert_integrand_generic(i, domain, args; kw...)
 
 function (s::Backend.Quadrature)(f, domain, ::Nothing)
     xmin, xmax = domain
@@ -19,7 +19,7 @@ function (s::Backend.Quadrature)(f, domain, ::Nothing)
     return result
 end
 
-function (s::Backend.Quadrature)(f!, domain, result, args; params...)
+function (s::Backend.Quadrature)(f!, domain, result, args; kw...)
     xmin, xmax = domain
     Δx = 0.5 * (xmax - xmin)
     fill!(result, 0)

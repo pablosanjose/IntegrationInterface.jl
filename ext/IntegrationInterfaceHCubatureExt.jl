@@ -7,10 +7,10 @@ import IntegrationInterface as II
 # HCubature assumes a real domain
 II.convert_domain(s::Domain.Box, ::Backend.HCubature) = II.convert_domain_generic(error_if_Inf(s))
 
-II.convert_integrand(i::II.Integral{Nothing,<:Backend.HCubature}, domain, args; params...) =
-    II.convert_integrand_generic(i, domain, args; params...)
+II.convert_integrand(i::II.Integral{Nothing,<:Backend.HCubature}, domain, args; kw...) =
+    II.convert_integrand_generic(i, domain, args; kw...)
 
-II.convert_integrand(::II.Integral{<:Any,<:Backend.HCubature}, domain, args; params...) =
+II.convert_integrand(::II.Integral{<:Any,<:Backend.HCubature}, domain, args; kw...) =
     throw(ArgumentError("HCubature does not support in-place integration. Use StaticArrays for array-valued integrands."))
 
 (s::Backend.HCubature)(f, domain, ::Nothing) = hcubature(f, domain...; s.opts...) |> first
