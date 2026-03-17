@@ -7,9 +7,9 @@ end
 integral(domain; kw...) = f -> integral(f, domain; kw...)
 
 # Can be overridden for user-defined f types and domains
-default_backend(::Domain.Line) = Backend.QuadGK()
-default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Line}}) = Backend.QuadGK()
-default_backend(::Domain.Functional{<:Domain.Line}) = Backend.QuadGK()
+default_backend(::Domain.Box1D) = Backend.QuadGK()
+default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box1D}}) = Backend.QuadGK()
+default_backend(::Domain.Functional{<:Domain.Box1D}) = Backend.QuadGK()
 default_backend(::Domain.Box) = Backend.HCubature()
 default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
 default_backend(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
@@ -65,13 +65,13 @@ evaluate_domain(d::AbstractDomain, args; kw...) = d
 #   convert_domain, convert_integrand and backend(f, domain, result)
 
 # generic domain conversions (extensions must opt-in to these explicitly)
-convert_domain_generic(d::Domain.Line{<:Real,<:Real}) =
-    (d.x1, d.x2)
+convert_domain_generic(d::Domain.Box1D{<:Real,<:Real}) =
+    (first(d), last(d))
 convert_domain_generic(d::Domain.Box{N,<:NTuple{N,Real},<:NTuple{N,Real}}) where {N} =
-    (d.mins, d.maxs)
+    (first(d), last(d))
 
 # Deal with Infinity and complex-to-real conversions - see changeofvariables.jl
-convert_domain_generic(d::Domain.Line) = convert_domain_generic(transform_domain(d))
+convert_domain_generic(d::Domain.Box1D) = convert_domain_generic(transform_domain(d))
 convert_domain_generic(d::Domain.Box) = convert_domain_generic(transform_domain(d))
 
 # generic integrand conversions (extensions must opt-in to these explicitly)

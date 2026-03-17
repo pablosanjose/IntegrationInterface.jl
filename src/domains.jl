@@ -3,31 +3,20 @@ module Domain
 using IntegrationInterface: AbstractDomain, NumberOrInfinity
 import IntegrationInterface as II
 
-struct Line{T1<:NumberOrInfinity,T2<:NumberOrInfinity} <: AbstractDomain
-    x1::T1
-    x2::T2
-    function Line{T1,T2}(x1, x2) where {T1<:NumberOrInfinity,T2<:NumberOrInfinity}
-        error_if_degenerate(x1, x2)
-        x1´, x2´ = sanitize_infs(x1, x2)
-        return new(x1´, x2´)
-    end
-end
-
-Line(x1::T1, x2::T2) where {T1<:NumberOrInfinity,T2<:NumberOrInfinity} =
-    Line{T1,T2}(x1, x2)
-
-struct Box{N,T1<:NTuple{N,NumberOrInfinity},T2<:NTuple{N,NumberOrInfinity}} <: AbstractDomain
-    mins::T1
-    maxs::T2
-    function Box{N,T1,T2}(mins, maxs) where {N,T1<:NTuple{N,NumberOrInfinity},T2<:NTuple{N,NumberOrInfinity}}
+struct Box{N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}} <: AbstractDomain
+    mins::P1
+    maxs::P2
+    function Box{N,P1,P2}(mins, maxs) where {N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}}
         error_if_degenerate.(mins, maxs)
         mins´, maxs´ = sanitize_infs(mins, maxs)
         return new(mins´, maxs´)
     end
 end
 
-Box(x1::T1, x2::T2) where {N,T1<:NTuple{N,NumberOrInfinity},T2<:NTuple{N,NumberOrInfinity}} =
-    Box{N,T1,T2}(x1, x2)
+const Box1D{T1,T2} = Box{1,Tuple{T1},Tuple{T2}}
+
+Box(x1::P1, x2::P2) where {N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}} =
+    Box{N,P1,P2}(x1, x2)
 
 struct Functional{D<:AbstractDomain,F} <: AbstractDomain
     type::Type{D}
@@ -41,7 +30,7 @@ end
 ## Sanitization ##
 error_if_degenerate(::Number, ::Number) = nothing
 error_if_degenerate(x1::NumberOrInfinity, x2::NumberOrInfinity) = II.point(x1) == II.point(x2) &&
-    throw(ArgumentError("Got a Domain.Line corresponding to an unbounded ray with an ill-defined direction. "))
+    throw(ArgumentError("Got a domain corresponding to an unbounded ray with an ill-defined direction. "))
 
 # Should not mix Infinity with Inf. Also, Complex infs are not allowed
 function sanitize_infs(x1::Tuple, x2::Tuple)
@@ -60,9 +49,9 @@ sanitize_complex_inf(x::Complex) =
 sanitize_complex_inf(x) = x
 
 ## Show ##
-II.domainname(d::Line) = "Line($(short_show(d.x1, d.x2)))"
 II.domainname(d::Sum) = string("Sum(", join(II.domainname.(d.subdomains), ", "), ")")
-II.domainname(d::Box) = "Box(($(short_show(d.mins...))), ($(short_show(d.maxs...)))))"
+II.domainname(d::Box{N}) where {N} = "Box{$N}(($(short_show(d.mins...))), ($(short_show(d.maxs...)))))"
+II.domainname(d::Box{1}) = "Box{1}($(short_show(only(d.mins))), $(short_show(only(d.maxs))))"
 II.domainname(d::Functional) = "Functional{$(nameof(d.type))}"
 
 short_show(d::II.Infinity) = "Infinity($(II.point(d)))"
@@ -71,25 +60,32 @@ short_show(xs...) = join(short_show.(xs), ", ")
 
 ## API ##
 
-Line(s::NTuple{2,NumberOrInfinity}...) = Sum(Line.(s))
+# 1D box
+Box1D(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
 
-function Line(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
+# Sum of 1D boxes
+Box1D(s::NTuple{2,NumberOrInfinity}...) = Sum(Box.(s))
+
+# Sum of consecutive 1D boxes
+function Box1D(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
     nodes´ = (node1, node2, node3, nodes...)
-    return Sum(Line.(Base.front(nodes´), Base.tail(nodes´)))
+    return Sum(Box1D.(Base.front(nodes´), Base.tail(nodes´)))
 end
 
-function Line(nodes::AbstractVector)
-    return Sum(Line(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
+# As above, but with an AbstractVector
+function Box1D(nodes::AbstractVector)
+    return Sum(Box1D(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
 end
 
+# Functional domain
 (::Type{D})(f::Function) where {D<:AbstractDomain} = Functional(D, f)
 
 Sum(xs::AbstractDomain...) = Sum(xs)
 
 # accessors #
 
-Base.first(d::Line) = d.x1
-Base.last(d::Line) = d.x2
+Base.first(d::Box1D) = only(d.mins)
+Base.last(d::Box1D) = only(d.maxs)
 
 Base.first(d::Box) = d.mins
 Base.last(d::Box) = d.maxs
@@ -104,8 +100,8 @@ II.ungroup(ss::Sum) = ss.subdomains
 
 # conversion
 
-to_lines(d::Box{N}) where {N} = ntuple(i -> Line(d.mins[i], d.maxs[i]), Val(N))
+to_1D_boxes(d::Box{N}) where {N} = ntuple(i -> Box1D(d.mins[i], d.maxs[i]), Val(N))
 
-to_box(d::NTuple{N,Line}) where {N} = Box(first.(d), last.(d))
+to_box(d::NTuple{N,Box1D}) where {N} = Box(first.(d), last.(d))
 
 end
