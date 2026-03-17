@@ -10,7 +10,7 @@ convert_integrand(i::Integral{<:Any,<:Backend.Quadrature}, domain, args; kw...) 
     convert_integrand_generic(i, domain, args; kw...)
 
 (s::Backend.Quadrature)(f, domain, ::Nothing) =
-    sum(((x,w),) -> f(x) * w, node_weight_iterator(s, domain...); init = 0.0)
+    sum(((x,w),) -> f(x) * w, node_weight_iterator(s, domain...))
 
 function (s::Backend.Quadrature)(f!, domain, result; kw...)
     itr = node_weight_iterator(s, domain...)
