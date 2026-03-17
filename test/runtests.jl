@@ -4,6 +4,7 @@ using QuadGK
 using HCubature
 using Cubature
 using FastGaussQuadrature
+using Unitful
 
 const II = IntegrationInterface
 
@@ -45,6 +46,11 @@ const II = IntegrationInterface
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
     J = integral(g!, Domain.Box1D((a,b) -> (a,b)); result)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
+
+    # Unitful.jl
+    f(x) = √(1 - x^2) * u"A"
+    J = integral(f, Domain.Box1D(-1,1); backend = Backend.Quadrature(gausslegendre(50)))
+    @test J() ≈ π/2 * u"A" atol = 1e-4*u"A"
 end
 
 @testset "Quadrature" begin

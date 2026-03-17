@@ -37,13 +37,11 @@ end
 
 HCubature(; opts...) = HCubature(NamedTuple(opts))
 
-struct Quadrature <: AbstractBackend
-	nodes::Vector{Float64}
-    weights::Vector{Float64}
+struct Quadrature{T} <: AbstractBackend
+	nodes::Vector{T}
+    weights::Vector{T}
 end
 
 Quadrature((nodes, weights)) = Quadrature(nodes, weights)
 
 end # module
-
-const IS = Backend
