@@ -15,9 +15,8 @@ end
 
 const Box1D{T1,T2} = Box{1,Tuple{T1},Tuple{T2}}
 
-Box(x1::P1, x2::P2) where {N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}} =
-    Box{N,P1,P2}(x1, x2)
-
+Box(mins::P1, maxs::P2) where {N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}} =
+    Box{N,P1,P2}(mins, maxs)
 struct Functional{D<:AbstractDomain,F} <: AbstractDomain
     type::Type{D}
     f::F

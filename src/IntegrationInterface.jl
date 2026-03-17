@@ -16,5 +16,6 @@ include("backends.jl")
 include("integral.jl")
 include("quadrature.jl")  # implementation of Backend.Quadrature, no extension required
 include("changeofvariables.jl")
+include("docstrings.jl")
 
 end
