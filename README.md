@@ -31,7 +31,7 @@ julia> integral(f, domain, args...; backend::AbstractBackend = default_backend(d
 julia> using QuadGK
 [ Info: Precompiling IntegrationInterfaceQuadGKExt [6a486dfe-6a5b-5d49-a9f9-02f4245ab8d6]
 
-julia> integral(cos, Domain.interval(0, π/2))                      # Defaults to Backend.QuadGK()
+julia> integral(cos, Domain.interval(0, π/2)) # Defaults to Backend.QuadGK()
 1.0
 ```
 
@@ -41,7 +41,7 @@ julia> using HCubature
 [ Info: Precompiling IntegrationInterfaceQuadGKExt [6a486dfe-6a5b-5d49-a9f9-02f4245ab8d6]
 [ Info: Precompiling IntegrationInterfaceHCubatureExt [b56c1907-5b79-5f70-9c8b-cc15ee23dcd1]
 
-julia> integral((x,y) -> cos(x-y), Domain.Box((-1,-1), (1,1)))  # Defaults to Backend.HCubature()
+julia> integral((x,y) -> cos(x-y), Domain.Box((-1,-1), (1,1))) # Defaults to Backend.HCubature()
 2.8322936730937722
 ```
 
@@ -53,7 +53,7 @@ As shown above, the integration is actually performed by backend packages that m
 - HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, default for `Domain.Box{N}` domains with `N ≠ 1`)
 - Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`)
 
-We also provide a `Backend.Quadrature((nodes, weights))` backend that can be used with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. Nodes and weights are then scaled appropriately to the domain provided
+We also provide a `Backend.Quadrature((nodes, weights))` backend that can be used e.g. with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. The `Backend.Quadrature` package then uses these values for integrals over any `Domain.Box{N}` for any `N`.
 ```julia
 julia> using FastGaussQuadrature, QuadGK
 
