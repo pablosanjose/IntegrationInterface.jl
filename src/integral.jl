@@ -65,14 +65,10 @@ evaluate_domain(d::AbstractDomain, args; kw...) = d
 #   convert_domain, convert_integrand and backend(f, domain, result)
 
 # generic domain conversions (extensions must opt-in to these explicitly)
-convert_domain_generic(d::Domain.Box1D{<:Real,<:Real}) =
-    (first(d), last(d))
-convert_domain_generic(d::Domain.Box{N,<:NTuple{N,Real},<:NTuple{N,Real}}) where {N} =
-    (first(d), last(d))
+#   transform_domain deals with Infinity and complex-to-real conversions - see changeofvariables.jl
+convert_domain_generic(d::Domain.Box) = firstlast(transform_domain(d))
 
-# Deal with Infinity and complex-to-real conversions - see changeofvariables.jl
-convert_domain_generic(d::Domain.Box1D) = convert_domain_generic(transform_domain(d))
-convert_domain_generic(d::Domain.Box) = convert_domain_generic(transform_domain(d))
+firstlast(d) = (first(d), last(d))
 
 # generic integrand conversions (extensions must opt-in to these explicitly)
 function convert_integrand_generic(i::Integral{Nothing}, domain, args; post = identity, kw...)

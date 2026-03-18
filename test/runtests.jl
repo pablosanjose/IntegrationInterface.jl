@@ -46,11 +46,27 @@ const II = IntegrationInterface
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
     J = integral(g!, Domain.Box1D((a,b) -> (a,b)); result)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
+end
 
-    # Unitful.jl
+@testset begin "Unitful"
+    # 1D
     f(x) = √(1 - x^2) * u"A"
-    J = integral(f, Domain.Box1D(-1,1); backend = Backend.Quadrature(gausslegendre(50)))
-    @test J() ≈ π/2 * u"A" atol = 1e-4*u"A"
+    J1 = integral(f, Domain.Box1D(-1,1))
+    J2 = integral(f, Domain.Box1D(-1,1); backend = Backend.Quadrature(gausslegendre(50)))
+    @test J1() ≈ π/2 * u"A"
+    @test J2() ≈ π/2 * u"A" atol = 1e-4*u"A"
+    f(x) = √(1u"A"^2 - x^2)
+    J1 = integral(f, Domain.Box1D(-1u"A",1u"A"))
+    J2 = integral(f, Domain.Box1D(-1u"A",1u"A"); backend = Backend.Quadrature(gausslegendre(50)))
+    @test J1() ≈ π/2 * u"A"^2
+    @test J2() ≈ π/2 * u"A"^2 atol = 1e-4*u"A"^2
+    # 2D
+    for backend in (Backend.Quadrature(gausslegendre(50)), Backend.HCubature(), Backend.Cubature())
+        J = integral((x,y)->cos(ustrip(x+y)), Domain.Box((0u"A", 0u"A"), (π/2 * u"A", π * u"A")); backend)
+        backend isa Backend.Quadrature ? (@test (J() ≈ -2u"A"^2)) : (@test_throws ArgumentError J())
+        J = integral((x,y)->x*y*u"A", Domain.Box((0,0),(1,1)); backend)
+        backend isa Backend.Quadrature ? (@test (J() ≈ 0.25u"A")) : (@test_throws ArgumentError J())
+    end
 end
 
 @testset "Quadrature" begin

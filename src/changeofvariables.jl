@@ -27,20 +27,20 @@ change_of_variables(t, d::Domain.Box1D{<:Number,<:Infinity}) = first(d) + delta(
 change_of_variables(t, d::Domain.Box1D{<:Infinity, <:Number}) = last(d) - delta(d) * t/(1-t)
 change_of_variables(t, d::Domain.Box1D{<:Infinity, <:Infinity}) =
     0.5*(point(first(d))+point(last(d))) + 0.75 * delta(d) * t/(1-t^2)
-# complex case
-change_of_variables(t, d::Domain.Box1D{<:ComplexOrReal,<:ComplexOrReal}) = first(d) + delta(d)*t
+# Anything number that is not real (e.g. complex, unitful) is converted for compatibility
+change_of_variables(t, d::Domain.Box1D{<:Number,<:Number}) = first(d) + delta(d)*t
 change_of_variables(t, ::Domain.Box1D{<:Real,<:Real}) = t             # no transformation
 
 jacobian(t, d::Domain.Box1D{<:Number,<:Infinity}) = delta(d)/(1-t)^2
 jacobian(t, d::Domain.Box1D{<:Infinity,<:Number}) = delta(d)/(1-t)^2
 jacobian(t, d::Domain.Box1D{<:Infinity,<:Infinity}) = 0.75*delta(d)*(1+t^2)/(1-t^2)^2
-jacobian(t, d::Domain.Box1D{<:ComplexOrReal,<:ComplexOrReal}) = delta(d)
+jacobian(t, d::Domain.Box1D{<:Number,<:Number}) = delta(d)
 jacobian(t, ::Domain.Box1D{<:Real,<:Real}) = 1                        # no transformation
 
 transform_domain(::Domain.Box1D{<:Number,<:Infinity}) = Domain.Box1D(0.0, 1.0)
 transform_domain(::Domain.Box1D{<:Infinity,<:Number}) = Domain.Box1D(0.0, 1.0)
 transform_domain(::Domain.Box1D{<:Infinity,<:Infinity}) = Domain.Box1D(-1.0, 1.0)
-transform_domain(::Domain.Box1D{<:ComplexOrReal,<:ComplexOrReal}) = Domain.Box1D(0.0, 1.0)
+transform_domain(::Domain.Box1D{<:Number,<:Number}) = Domain.Box1D(0.0, 1.0)
 transform_domain(d::Domain.Box1D{<:Real,<:Real}) = d                  # no transformation
 
 delta(d::Domain.Box1D) = point(last(d)) - point(first(d))
