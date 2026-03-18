@@ -24,4 +24,3 @@ end
 Infinity(point::T) where {T} = Infinity{T}(point)
 
 const NumberOrInfinity = Union{Number,Infinity}
-const ComplexOrReal = Union{Real,Complex}
