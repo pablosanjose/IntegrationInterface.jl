@@ -44,7 +44,7 @@ Create a nested integral. Each level can have different `kw` and `domain` (see e
 ```julia
 julia> using QuadGK, HCubature
 
-julia> J = Integral(x -> exp(-x), Domain.Box1D(0, Infinity(1)))  # uses QuadGK by default
+julia> J = Integral(x -> exp(-x), Domain.Box{1}(0, Infinity(1)))  # uses QuadGK by default
 Integral
   Mutating   : false
   Domain     : Box{1}(0, Infinity(1))
@@ -56,7 +56,7 @@ julia> J()
 
 julia> f(x,y) = exp(-x^2-y^2);
 
-julia> J = f |> Integral(Domain.Box1D(0,1)) |> Integral(Domain.Box1D(0, Infinity(1))) # Nested!
+julia> J = f |> Integral(Domain.Box{1}(0,1)) |> Integral(Domain.Box{1}(0, Infinity(1))) # Nested!
 Integral
   Mutating   : false
   Domain     : Box{1}(0, Infinity(1))
@@ -90,7 +90,7 @@ formally equivalent to `Integral(f, domain; backend, result)(args...; kw...)`.
 ```julia
 julia> using QuadGK
 
-julia> integral(x -> exp(-x), Domain.Box1D(0, Infinity(1)))
+julia> integral(x -> exp(-x), Domain.Box{1}(0, Infinity(1)))
 1.0
 ```
 
@@ -100,78 +100,67 @@ julia> integral(x -> exp(-x), Domain.Box1D(0, Infinity(1)))
 integral
 
 """
-    Domain.Box1D(a::Union{Number,Infinity}, b::Union{Number,Infinity})
-
-Create a 1D integration domain `Domain.Box{1}` from `a` to `b`.
-
-    Domain.Box1D(xs::Union{Number,Infinity}...)
-
-Create a sum of `Domain.Box{1}` subdomains corresponding to intervals `(xs[1], xs[2])`,
-`(xs[2], xs[3])`, `(xs[3], xs[4])`,... . For real-valued variables, or for complex variables
-of holomorphic functions, this is equivalent to an integral from `first(xs)` to `last(xs)`.
-
-    Domain.Box1D(f::Function)
-
-Create a `D::Domain.Functional{Box1D}` domain that depends on external parameters.
-Evaluating it with `D(args...; kw...)` produces `Box1D(f(args...; kw...)...)`.
-
-# Examples
-```julia
-julia> using QuadGK
-
-julia> J = Integral(cos, Domain.Box1D(0, π/2))
-Integral
-  Mutating   : false
-  Domain     : Box{1}(0, 1.5707963267948966)
-  Backend    : QuadGK
-  Integrand  : cos
-
-julia> J()
-1.0
-```
-# See also:
-    `Box`, `Infinity`, `integral`
-
-"""
-Domain.Box1D
-
-"""
     Domain.Box((x₁ᵐⁱⁿ, x₂ᵐⁱⁿ, ..., xₙᵐⁱⁿ), (x₁ᵐᵃˣ, x₂ᵐᵃˣ, ..., xₙᵐᵃˣ))
 
 Create an integration domain `Domain.Box{N}` for a function `f(x₁, x₂, ..., xₙ)` over an `N`
 dimensional hypercube defined by the intervals `(xᵢᵐⁱⁿ, xᵢᵐᵃˣ)`.
 
-    Domain.Box(f::Function)
+    Domain.Box{N}(f::Function)
 
-Create a `D::Domain.Functional{Box}` domain that depends on external parameters.
-Evaluating it with `D(args...; kw...)` produces `Box(f(args...; kw...)...)`.
+Create a `D::Domain.Functional{Box{N}}` domain that depends on external parameters.
+Evaluating it as `D(args...; kw...)` produces `Box(f(args...; kw...)...)`, which should be
+a `Box{N}`. Note that `Domain.Box(::Function)` is not supported, `N` must be specified.
 
 # Examples
 ```julia
-julia> using HCubature
+julia> using QuadGK, HCubature
 
-julia> J = Integral((x,y,z) -> cos(x+y+z), Domain.Box((0, 0, 0), (π/2, π/2, π/2)))
+julia> J = Integral((x; kw...) -> exp(-x), Domain.Box{1}((; x0 = 1) -> (x0, Infinity(2x0))))
 Integral
   Mutating   : false
-  Domain     : Box{3}((0, 0, 0), (1.5707963267948966, 1.5707963267948966, 1.5707963267948966)))
-  Backend    : HCubature
-  Integrand  : #1
+  Domain     : Functional{Box{1}}
+  Backend    : QuadGK
+  Integrand  : #43
 
-julia> J()
+julia> J(x0 = 3)
+0.04978706836786264
+
+julia> integral((x,y,z) -> cos(x+y+z), Domain.Box((0, 0, 0), (π/2, π/2, π/2)))
 -1.9999999998615692
+
 ```
 
 # See also:
-    `Box1D`, `Infinity`, `integral`
+    `Domain.interval`, `Infinity`, `integral`
 
 """
 Domain.Box
 
 """
+    Domain.interval(a::Union{Number,Infinity}, b::Union{Number,Infinity})
+
+Equivalent to `Domain.Box{1}(a, b)`. Construct a 1D domain from `a` to `b`
+
+    Domain.interval((a₁, b₁), (a₂, b₂), ...)
+
+Equivalent to `Domain.Box((a₁, a₂, ...), (b₁, b₂, ...))`. Construct an N-D hypercube domain
+spanning interval `(aᵢ, bᵢ)` along the `i` dimension.
+
+# Example
+```julia
+julia> using QuadGK
+
+julia> integral(cos, Domain.interval(0, π/2))
+1.0
+```
+"""
+Domain.interval
+
+"""
     Infinity(x::Number)
 
 Creates an `Infinity` object representing an unbounded 1D ray passing through `x`. It can be
-used in place of `Inf` to create unbounded domains, e.g. `Domain.Box1D(0, Infinity(1+im))`,
+used in place of `Inf` to create unbounded domains, e.g. `Domain.Box{1}(0, Infinity(1+im))`,
 which represents a straight semi-infinite line in the complex plane starting at 0 and
 extending to infinity through point `1+im`.
 

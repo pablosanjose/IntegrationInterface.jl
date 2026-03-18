@@ -51,7 +51,9 @@ sanitize_complex_inf(x) = x
 II.domainname(d::Sum) = string("Sum(", join(II.domainname.(d.subdomains), ", "), ")")
 II.domainname(d::Box{N}) where {N} = "Box{$N}(($(short_show(d.mins...))), ($(short_show(d.maxs...)))))"
 II.domainname(d::Box{1}) = "Box{1}($(short_show(only(d.mins))), $(short_show(only(d.maxs))))"
-II.domainname(d::Functional) = "Functional{$(nameof(d.type))}"
+II.domainname(d::Functional) = "Functional{$(II.domainname(d.type))}"
+II.domainname(::Type{<:Box{N}}) where {N} = "Box{$N}"
+II.domainname(d::Type) = nameof(d)
 
 short_show(d::II.Infinity) = "Infinity($(II.point(d)))"
 short_show(d::Number) = "$d"
@@ -60,31 +62,38 @@ short_show(xs...) = join(short_show.(xs), ", ")
 ## API ##
 
 # 1D box
-Box1D(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
-
-# Sum of 1D boxes
-Box1D(s::NTuple{2,NumberOrInfinity}...) = Sum(Box.(s))
+Box{1}(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
+Box(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
 
 # Sum of consecutive 1D boxes
-function Box1D(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
+function Box{1}(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
     nodes´ = (node1, node2, node3, nodes...)
-    return Sum(Box1D.(Base.front(nodes´), Base.tail(nodes´)))
+    return Sum(Box{1}.(Base.front(nodes´), Base.tail(nodes´)))
 end
 
 # As above, but with an AbstractVector
-function Box1D(nodes::AbstractVector)
-    return Sum(Box1D(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
+function Box{1}(nodes::AbstractVector)
+    return Sum(Box{1}(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
 end
 
 # Functional domain
-(::Type{D})(f::Function) where {D<:AbstractDomain} = Functional(D, f)
+Box{N}(f::Function) where {N} = Functional(Box{N}, f)
+Box(f::Function) = throw(ArgumentError("`Box(::Function)` not supported, use `Box{N}(::Function)` instead."))
 
+(f::Functional{Box{N}})(args...; kw...) where {N} = Box(f.f(args...; kw...)...)::Box{N}
+
+# Sum of domains
 Sum(xs::AbstractDomain...) = Sum(xs)
+
+# Domain.interval helper
+
+interval(a::NumberOrInfinity, b::NumberOrInfinity) = Box{1}(a, b)
+interval(is::NTuple{2,NumberOrInfinity}...) = Box(first.(is), last.(is))
 
 # accessors #
 
-Base.first(d::Box1D) = only(d.mins)
-Base.last(d::Box1D) = only(d.maxs)
+Base.first(d::Box{1}) = only(d.mins)
+Base.last(d::Box{1}) = only(d.maxs)
 
 Base.first(d::Box) = d.mins
 Base.last(d::Box) = d.maxs
@@ -99,8 +108,8 @@ II.ungroup(ss::Sum) = ss.subdomains
 
 # conversion
 
-to_1D_boxes(d::Box{N}) where {N} = ntuple(i -> Box1D(d.mins[i], d.maxs[i]), Val(N))
+to_1D_boxes(d::Box{N}) where {N} = ntuple(i -> Box{1}(d.mins[i], d.maxs[i]), Val(N))
 
-to_box(d::NTuple{N,Box1D}) where {N} = Box(first.(d), last.(d))
+to_box(d::NTuple{N,Box{1}}) where {N} = Box(first.(d), last.(d))
 
 end

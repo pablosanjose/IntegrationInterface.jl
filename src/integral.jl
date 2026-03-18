@@ -9,9 +9,9 @@ integral(f, domain::AbstractDomain, args...; result = nothing, backend::Abstract
 integral(domain::AbstractDomain, args...; kw...) = f -> integral(f, domain, args...; kw...)  # currying version
 
 # Can be overridden for user-defined f types and domains
-default_backend(::Domain.Box1D) = Backend.QuadGK()
-default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box1D}}) = Backend.QuadGK()
-default_backend(::Domain.Functional{<:Domain.Box1D}) = Backend.QuadGK()
+default_backend(::Domain.Box{1}) = Backend.QuadGK()
+default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box{1}}}) = Backend.QuadGK()
+default_backend(::Domain.Functional{<:Domain.Box{1}}) = Backend.QuadGK()
 default_backend(::Domain.Box) = Backend.HCubature()
 default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
 default_backend(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
