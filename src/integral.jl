@@ -1,10 +1,12 @@
 ## API ##
-function integral(f::F, domain::AbstractDomain; result = nothing, backend::AbstractBackend = default_backend(domain)) where {F}
-	return Integral(f, result, domain, backend)
-end
+Integral(f::F, domain::AbstractDomain; result = nothing, backend::AbstractBackend = default_backend(domain)) where {F} =
+	Integral(f, result, domain, backend)
+Integral(domain::AbstractDomain; kw...) = f -> Integral(f, domain; kw...)  # currying version
 
-# currying version
-integral(domain; kw...) = f -> integral(f, domain; kw...)
+# autoevaluated integral
+integral(f, domain::AbstractDomain, args...; result = nothing, backend::AbstractBackend = default_backend(domain), kw...) =
+    Integral(f, domain; result, backend)(args...; kw...)
+integral(domain::AbstractDomain, args...; kw...) = f -> integral(f, domain, args...; kw...)  # currying version
 
 # Can be overridden for user-defined f types and domains
 default_backend(::Domain.Box1D) = Backend.QuadGK()

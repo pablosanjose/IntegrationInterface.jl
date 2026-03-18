@@ -1,6 +1,6 @@
 module IntegrationInterface
 
-export integral, Backend, Domain, Infinity
+export integral, Integral, Backend, Domain, Infinity
 
 # function stubs for extensions to extend
 function domainname end
