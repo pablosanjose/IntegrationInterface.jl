@@ -87,6 +87,9 @@ end
     @test II.backend(J) isa Backend.Quadrature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093 atol = 1e-6
+    f(x,y) = exp(-x^2-y^2)
+    J = integral(f, Domain.Box((-Infinity(1),-Infinity(1)),(Infinity(1), Infinity(1))); backend)
+    @test J() ≈ π
 
     # Infs
     J = integral(f, Domain.Box1D(0, Inf); backend)
