@@ -141,10 +141,11 @@ Domain.Box1D
 Create an integration domain `Domain.Box{N}` for a function `f(x₁, x₂, ..., xₙ)` over an `N`
 dimensional hypercube defined by the intervals `(xᵢᵐⁱⁿ, xᵢᵐᵃˣ)`.
 
-    Domain.Box(f::Function)
+    Domain.Box{N}(f::Function)
 
-Create a `D::Domain.Functional{Box}` domain that depends on external parameters.
-Evaluating it with `D(args...; kw...)` produces `Box(f(args...; kw...)...)`.
+Create a `D::Domain.Functional{Box{N}}` domain that depends on external parameters.
+Evaluating it as `D(args...; kw...)` produces `Box(f(args...; kw...)...)`, which should be
+a `Box{N}`.
 
 # Examples
 ```julia
@@ -162,10 +163,22 @@ julia> J()
 ```
 
 # See also:
-    `Box1D`, `Infinity`, `integral`
+    `Domain.interval`, `Infinity`, `integral`
 
 """
 Domain.Box
+
+"""
+    Domain.interval(a::Union{Number,Infinity}, b::Union{Number,Infinity})
+
+Equivalent to `Domain.Box1D(a, b)`. Construct a 1D domain from `a` to `b`
+
+    Domain.interval((a₁, b₁), (a₂, b₂), ...)
+
+Equivalent to `Domain.Box((a₁, a₂, ...), (b₁, b₂, ...))`. Construct an N-D hypercube domain
+spanning interval `(aᵢ, bᵢ)` along the `i` dimension.
+"""
+Domain.interval
 
 """
     Infinity(x::Number)

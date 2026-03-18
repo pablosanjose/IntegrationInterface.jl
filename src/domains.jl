@@ -62,9 +62,6 @@ short_show(xs...) = join(short_show.(xs), ", ")
 # 1D box
 Box1D(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
 
-# Sum of 1D boxes
-Box1D(s::NTuple{2,NumberOrInfinity}...) = Sum(Box.(s))
-
 # Sum of consecutive 1D boxes
 function Box1D(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
     nodes´ = (node1, node2, node3, nodes...)
@@ -77,9 +74,17 @@ function Box1D(nodes::AbstractVector)
 end
 
 # Functional domain
-(::Type{D})(f::Function) where {D<:AbstractDomain} = Functional(D, f)
+Box{N}(f::Function) where {N} = Functional(Box{N}, f)
 
+(f::Functional{Box{N}})(args...; kw...) where {N} = Box(f.f(args...; kw...)...)::Box{N}
+
+# Sum of domains
 Sum(xs::AbstractDomain...) = Sum(xs)
+
+# Domain.interval helper
+
+interval(a::NumberOrInfinity, b::NumberOrInfinity) = Box1D(a, b)
+interval(is::NTuple{2,NumberOrInfinity}...) = Box(first.(is), last.(is))
 
 # accessors #
 
