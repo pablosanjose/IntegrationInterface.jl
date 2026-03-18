@@ -8,7 +8,7 @@ $$J(\text{args}...; \text{kw}...) = \int_{D(\text{args}...; \text{kw}...)} d^n x
 
 The general interface reads
 ```julia
-julia> J = integral(f, domain; backend::AbstractBackend = default_backend(domain), result = nothing)
+julia> J = Integral(f, domain; backend::AbstractBackend = default_backend(domain), result = nothing)
 ```
 This produces an `J::Integral` object. Currently, only bounded and unbounded hypercube domains are possible. They are created with `Domain.Box`. For the interval of a 1D integral we have the alias `Domain.Box1D`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments and keywords passed to `J`.
 
@@ -20,24 +20,32 @@ julia> J(args...; kw...)
 ```
 In the mutating case, this will also write the value of the integral into `result`.
 
-Example:
+If one doesn't need to evaluate `J` repeatedly for different `args` and `kw`, or use `J` inside an integral (see Composition below), one may use the following lowercase `integral` form to obtain the value of the integral directly (equivalent to building *and* calling `J(args...; kw...)`),
+```julia
+julia> integral(f, domain, args...; backend::AbstractBackend = default_backend(domain), result = nothing, kw...)
+```
+
+## Simple examples
+### 1D integral
+```julia
+julia> using QuadGK
+[ Info: Precompiling IntegrationInterfaceQuadGKExt [6a486dfe-6a5b-5d49-a9f9-02f4245ab8d6]
+
+julia> integral(cos, Domain.Box1D(0, π/2))                      # Defaults to Backend.QuadGK()
+1.0
+```
+
+### 2D integral
 ```julia
 julia> using HCubature
 [ Info: Precompiling IntegrationInterfaceQuadGKExt [6a486dfe-6a5b-5d49-a9f9-02f4245ab8d6]
 [ Info: Precompiling IntegrationInterfaceHCubatureExt [b56c1907-5b79-5f70-9c8b-cc15ee23dcd1]
 
-julia> f(x,y) = cos(x-y);
-
-julia> J = integral(f, Domain.Box((-1,-1), (1,1)); backend = Backend.HCubature())
-Integral
-  Mutating   : false
-  Domain     : Box((-1, -1), (1, 1))
-  Backend    : HCubature
-  Integrand  : f
-
-julia> J()
+julia> integral((x,y) -> cos(x-y), Domain.Box((-1,-1), (1,1)))  # Defaults to Backend.HCubature()
 2.8322936730937722
 ```
+
+## Backends
 
 As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding backends in `IntegralBackends` are
 
@@ -51,14 +59,14 @@ julia> using FastGaussQuadrature, QuadGK
 
 julia> f(x) = cos(x);
 
-julia> J1 = integral(f, Domain.Box1D(3,5); backend = Backend.Quadrature(gausslegendre(10)))
+julia> J1 = Integral(f, Domain.Box1D(3,5); backend = Backend.Quadrature(gausslegendre(10)))
 Integral
   Mutating   : false
   Domain     : Box{1}(3, 5)
   Backend    : Quadrature
   Integrand  : f
 
-julia> J2 = integral(f, Domain.Box1D(3,5); backend = Backend.QuadGK())
+julia> J2 = Integral(f, Domain.Box1D(3,5); backend = Backend.QuadGK())
 Integral
   Mutating   : false
   Domain     : Box{1}(3, 5)
@@ -69,6 +77,7 @@ julia> J1(), J2()
 (-1.1000442827230061, -1.1000442827230057)
 ```
 
+## Composition of `Integral`s
 We can also express nested integrals such as
 
 $$J(\text{args}...; \text{kw}...) = \int_{D_n} dx_n\dots\int_{D_1} dx_1 f(\boldsymbol{x}, \text{args}...; \text{kw}...)$$
@@ -82,7 +91,7 @@ This integral can be evaluated either as one adaptive `HCubature` or two nested 
 julia> f(x,y) = (x-y)^2 * cos(x+y)
 f (generic function with 2 methods)
 
-julia> J1 = f |> integral(Domain.Box1D(0,1)) |> integral(Domain.Box1D(2,3))
+julia> J1 = f |> Integral(Domain.Box1D(0,1)) |> Integral(Domain.Box1D(2,3))
 Integral
   Mutating   : false
   Domain     : Box{1}(2, 3)
@@ -93,7 +102,7 @@ Integral
     Backend    : QuadGK
     Integrand  : f
 
-julia> J2 = integral(f, Domain.Box((0,2), (1,3)); backend = Backend.HCubature())
+julia> J2 = Integral(f, Domain.Box((0,2), (1,3)); backend = Backend.HCubature())
 Integral
   Mutating   : false
   Domain     : Box((0, 2), (1, 3))
@@ -103,15 +112,16 @@ Integral
 julia> (J1(), J2())
 (-3.800374064781164, -3.800374064812097)
 ```
-Note the currying syntax used above for `J1`. It is equivalent to `J1 = integral(integral(f, Domain.Box1D(0,1)), Domain.Box1D(2,3))`.
+Note the currying syntax used above for `J1`. It is equivalent to `J1 = Integral(Integral(f, Domain.Box1D(0,1)), Domain.Box1D(2,3))`.
 
-We can also make inner domains depend on outer integration variables. This provides one way to integrate over non-Box domains. For example,
+## Functional domains
+We can also make domains depend on `args` and `kw`s. In the above, this allows the inner domain to depend on outer integration variables. This provides one way to integrate over non-Box domains. For example,
 
 $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = f |> integral(Domain.Box1D(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> integral(Domain.Box1D(-1,1))
+julia> J = f |> Integral(Domain.Box1D(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> Integral(Domain.Box1D(-1,1))
 Integral
   Mutating   : false
   Domain     : Box{1}(-1, 1)
@@ -128,6 +138,8 @@ julia> J()
 ```
 where we have passed a function to the `Domain.Box1D` instead of the box bounds.
 
+## Infinity
+
 Some backends support using `Inf` to express unbounded domains. If that is not supported, we provide `Infinity(point::Number)` that can be used in box bounds instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `D = Domain.Box((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))))`. Note that it is a `Domain.Functional` object that depends on a keyword argument `σ`. We can integrate a Gaussian over `D`, which gives `π` for `σ = 1`
 
 ```julia
@@ -135,7 +147,7 @@ julia> f(x, y; σ = 1) = exp(-0.5*(x^2+y^2)/σ^2);
 
 julia> D = Domain.Box((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))));
 
-julia> J = integral(f, D)
+julia> J = Integral(f, D)
 Integral
   Mutating   : false
   Domain     : Functional{Box}
