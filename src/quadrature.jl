@@ -24,15 +24,15 @@ function (s::Backend.Quadrature)(f!, domain, result; kw...)
     return result
 end
 
-function node_weight_iterator(s::Backend.Quadrature, xmin::Number, xmax::Number)
-    Δx = 0.5 * (xmax - xmin)
+function node_weight_iterator(s::Backend.Quadrature{T}, xmin::Number, xmax::Number) where {T}
+    Δx = T(0.5) * (xmax - xmin)
     error_if_inf(Δx)
     itr = ((xmin + Δx * (t + 1), Δx * w) for (t, w) in zip(s.nodes, s.weights))
     return itr
 end
 
-function node_weight_iterator(s::Backend.Quadrature, mins::NTuple{N,Number}, maxs::NTuple{N,Number}) where {N}
-    Δxs = 0.5 .* (maxs .- mins)
+function node_weight_iterator(s::Backend.Quadrature{T}, mins::NTuple{N,Number}, maxs::NTuple{N,Number}) where {N,T}
+    Δxs = T(0.5) * (maxs .- mins)
     error_if_inf.(Δxs)
     Δxprod = prod(Δxs)
     zs = Iterators.product(ntuple(Returns(zip(s.nodes, s.weights)), Val(N))...)

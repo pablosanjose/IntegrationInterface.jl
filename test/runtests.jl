@@ -118,6 +118,17 @@ end
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
     J = integral(g!, Domain.Box1D((a,b) -> (a,b)); result, backend)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
+
+    # Types
+    nodes, weights = gausslegendre(50)
+    J = integral(cos, Domain.Box1D(-Float32(π/2),Float32(π/2)); backend = Backend.Quadrature(Float32.(nodes), Float32.(weights)))
+    @test J() isa Float32
+    J = integral(cos, Domain.Box1D(-Float32(π/2),Float32(π/2)); backend = Backend.QuadGK())
+    @test J() isa Float32
+    J = integral((x,y) -> cos(x-y), Domain.Box((0f0,0f0),(-Float32(π/2),Float32(π))); backend = Backend.HCubature())
+    @test J() isa Float32
+    J = integral((x,y) -> cos(x-y), Domain.Box((0f0,0f0),(-Float32(π/2),Float32(π))); backend = Backend.Cubature())
+    @test_broken J() isa Float32  # Cubature does not respect types
 end
 
 @testset "HCubature" begin
