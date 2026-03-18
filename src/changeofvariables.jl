@@ -37,10 +37,10 @@ jacobian(t, d::Domain.Box1D{<:Infinity,<:Infinity}) = 0.75*delta(d)*(1+t^2)/(1-t
 jacobian(t, d::Domain.Box1D{<:Number,<:Number}) = delta(d)
 jacobian(t, ::Domain.Box1D{<:Real,<:Real}) = 1                        # no transformation
 
-transform_domain(::Domain.Box1D{<:Number,<:Infinity}) = Domain.Box1D(0.0, 1.0)
-transform_domain(::Domain.Box1D{<:Infinity,<:Number}) = Domain.Box1D(0.0, 1.0)
-transform_domain(::Domain.Box1D{<:Infinity,<:Infinity}) = Domain.Box1D(-1.0, 1.0)
-transform_domain(::Domain.Box1D{<:Number,<:Number}) = Domain.Box1D(0.0, 1.0)
+transform_domain(::Domain.Box1D{<:Number,<:Infinity}) = Domain.Box{1}(0.0, 1.0)
+transform_domain(::Domain.Box1D{<:Infinity,<:Number}) = Domain.Box{1}(0.0, 1.0)
+transform_domain(::Domain.Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1.0, 1.0)
+transform_domain(::Domain.Box1D{<:Number,<:Number}) = Domain.Box{1}(0.0, 1.0)
 transform_domain(d::Domain.Box1D{<:Real,<:Real}) = d                  # no transformation
 
 delta(d::Domain.Box1D) = point(last(d)) - point(first(d))
