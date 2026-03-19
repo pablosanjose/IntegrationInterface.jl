@@ -42,8 +42,22 @@ function promote_type_infs(xs...)
     T = promote_type(typeof.(II.point.(xs))...)
     isconcretetype(T) || throw(ArgumentError("Couldn't find a concrete promotion type for domain"))
     return float(T)
+struct Simplex{N,P<:SimplexVertices{N}} <: AbstractDomain
+    vertices::P  # collection of N+1 vertices in N-dimensions
+    function Simplex{N,P}(vertices) where {N,P<:SimplexVertices{N}}
+        for j in 1:N+1, i in j+1:N+1
+            error_if_degenerate(vertices[i], vertices[j])
+            error_if_mixed_infs(vertices[i], vertices[j])
+        end
+        return new(vertices)
+    end
 end
 
+Simplex(vertices::P) where {N,P<:SimplexVertices{N}} = Simplex{N,P}(vertices)
+
+const RealFiniteSimplex{N} = Simplex{N,<:SimplexVerticesRealFinite{N}}
+
+## Sanitization ##
 
 promote_inf(T::Type, x::Number) = convert(T, x)
 promote_inf(T::Type, x::Infinity) = Infinity(convert(T, II.point(x)))
@@ -70,7 +84,6 @@ isinf_any(x::Number) = isinf(x)
 isinf_any(x::Tuple) = any(isinf, x)
 
 error_mixed_infs() = throw(ArgumentError("Mixing `Inf` with `Infinity` is ambiguous."))
-
 
 ## Show ##
 II.domainname(d::Sum) = string("Sum(", join(II.domainname.(d.subdomains), ", "), ")")
@@ -101,11 +114,30 @@ function Box{1}(nodes::AbstractVector)
     return Sum(Box{1}(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
 end
 
+# Simplex
+
+Simplex(xs::NTuple...) = Simplex(xs)
+
+# unit simplex
+
+Base.oneunit(d::Simplex) = oneunit(typeof(d))
+
+function Base.oneunit(::Type{<:Simplex{N}}) where {N}
+    z = ntuple(Returns(0), Val(N))
+    u = ntuple(j ->ntuple(i->ifelse(i==j, 1, 0), Val(N)), Val(N))
+    return Simplex(z, u...)
+end
+
 # Functional domain
 Box{N}(f::Function) where {N} = Functional(Box{N}, f)
-Box(f::Function) = throw(ArgumentError("`Box(::Function)` not supported, use `Box{N}(::Function)` instead."))
+Simplex{N}(f::Function) where {N} = Functional(Simplex{N}, f)
 
+(::Type{D})(::Function) where {D<:AbstractDomain} =
+    throw(ArgumentError("`$(nameof(D))(::Function)` not supported, use `$(nameof(D)){N}(::Function)` instead."))
+
+# call
 (f::Functional{Box{N}})(args...; kw...) where {N} = Box(f.f(args...; kw...)...)::Box{N}
+(f::Functional{Simplex{N}})(args...; kw...) where {N} = Simplex(f.f(args...; kw...)...)::Simplex{N}
 
 # Sum of domains
 Sum(xs::AbstractDomain...) = Sum(xs)
@@ -123,9 +155,7 @@ Base.last(d::Box{1}) = only(d.maxs)
 Base.first(d::Box) = d.mins
 Base.last(d::Box) = d.maxs
 
-# call #
-
-(f::Functional{D})(args...; kw...) where {D} = D(f.f(args...; kw...)...)
+vertices(s::Simplex) = s.vertices
 
 # ungroup domain sums
 

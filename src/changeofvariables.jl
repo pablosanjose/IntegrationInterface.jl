@@ -9,6 +9,7 @@
 
 point(d::Infinity) = d.point
 point(x::Number) = x
+point(x::Tuple) = x
 
 Base.:+(d::Infinity) = d
 Base.:-(d::Infinity) = Infinity(-point(d))
@@ -39,11 +40,12 @@ jacobian(t, d::Box1D{<:Infinity,<:Infinity}) = 0.75*delta(d)*(1+t^2)/(1-t^2)^2
 jacobian(t, d::Box1D{<:Number,<:Number}) = delta(d)
 jacobian(t, ::Box1D{<:Real,<:Real}) = 1                        # no transformation
 
-transform_domain(::Box1D{<:Number,<:Infinity}) = Domain.Box{1}(0.0, 1.0)
-transform_domain(::Box1D{<:Infinity,<:Number}) = Domain.Box{1}(0.0, 1.0)
-transform_domain(::Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1.0, 1.0)
-transform_domain(::Box1D{<:Number,<:Number}) = Domain.Box{1}(0.0, 1.0)
-transform_domain(d::Box1D{<:Real,<:Real}) = d                  # no transformation
+# We don't use floats to preserve Float32 compatibility
+transform_domain(::Domain.Box1D{<:Number,<:Infinity}) = Domain.Box{1}(0, 1)
+transform_domain(::Domain.Box1D{<:Infinity,<:Number}) = Domain.Box{1}(0, 1)
+transform_domain(::Domain.Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1, 1)
+transform_domain(::Domain.Box1D{<:Number,<:Number}) = Domain.Box{1}(0, 1)
+transform_domain(d::Domain.Box1D{<:Real,<:Real}) = d                  # no transformation
 
 delta(d::Box1D) = point(last(d)) - point(first(d))
 
@@ -53,3 +55,7 @@ change_of_variables(t, d::Domain.Box) = change_of_variables.(t, Domain.to_1D_box
 jacobian(t, d::Domain.Box) = prod(jacobian.(t, Domain.to_1D_boxes(d)))
 
 transform_domain(d::Domain.Box) = Domain.to_box(transform_domain.(Domain.to_1D_boxes(d)))
+
+## Domain.Simplex -- see IntegrationInterfaceHAdaptiveIntegrationExt.jl
+# Optimal change of variables requires StaticArrays, a dependency of HAdaptiveIntegration,
+# so we define the corresponding dispatches in its extension.
