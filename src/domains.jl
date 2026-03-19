@@ -1,51 +1,76 @@
 module Domain
 
-using IntegrationInterface: AbstractDomain, NumberOrInfinity
+using IntegrationInterface: AbstractDomain, Infinity
 import IntegrationInterface as II
 
-struct Box{N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}} <: AbstractDomain
-    mins::P1
-    maxs::P2
-    function Box{N,P1,P2}(mins, maxs) where {N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}}
-        error_if_degenerate.(mins, maxs)
-        mins´, maxs´ = sanitize_infs(mins, maxs)
-        return new(mins´, maxs´)
-    end
-end
+const MaybeInfinity{T} = Union{T,Infinity{T}}
+const NumberOrInfinity = MaybeInfinity{<:Number}            # a number or a scalar ray
+const NumberOrNTuple = Union{Number,NTuple{<:Any,Number}}   # a number or a point of numbers
 
-const Box1D{T1,T2} = Box{1,Tuple{T1},Tuple{T2}}
-
-Box(mins::P1, maxs::P2) where {N,P1<:NTuple{N,NumberOrInfinity},P2<:NTuple{N,NumberOrInfinity}} =
-    Box{N,P1,P2}(mins, maxs)
-struct Functional{D<:AbstractDomain,F} <: AbstractDomain
-    type::Type{D}
-    f::F
-end
 
 struct Sum{T} <: AbstractDomain
     subdomains::T   # subdomains should be an iterator over AbstractDomains
 end
 
+struct Functional{D<:AbstractDomain,F} <: AbstractDomain
+    type::Type{D}
+    f::F
+end
+
+struct Box{N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}} <: AbstractDomain
+    mins::P1
+    maxs::P2
+    function Box{N,T,P1,P2}(mins, maxs) where {N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}}
+        error_if_degenerate.(mins, maxs)
+        error_if_mixed_infs.(mins, maxs)
+        return new(mins, maxs)
+    end
+end
+
+# type promotion
+function Box(mins::NTuple{N,Any}, maxs::NTuple{N,Any}) where {N}
+    T = promote_type_infs(mins..., maxs...)
+    mins´, maxs´ = promote_inf.(T, mins), promote_inf.(T, maxs)
+    P1, P2 = typeof(mins´), typeof(maxs´)
+    return Box{N,T,P1,P2}(mins´, maxs´)
+end
+
 ## Sanitization ##
-error_if_degenerate(::Number, ::Number) = nothing
-error_if_degenerate(x1::NumberOrInfinity, x2::NumberOrInfinity) = II.point(x1) == II.point(x2) &&
+
+# We cannot have integers as Domain types
+function promote_type_infs(xs...)
+    T = promote_type(typeof.(II.point.(xs))...)
+    isconcretetype(T) || throw(ArgumentError("Couldn't find a concrete promotion type for domain"))
+    return float(T)
+end
+
+
+promote_inf(T::Type, x::Number) = convert(T, x)
+promote_inf(T::Type, x::Infinity) = Infinity(convert(T, II.point(x)))
+
+error_if_degenerate(::NumberOrNTuple, ::NumberOrNTuple) = nothing
+error_if_degenerate(x1, x2) = II.point(x1) == II.point(x2) &&
     throw(ArgumentError("Got a domain corresponding to an unbounded ray with an ill-defined direction. "))
 
 # Should not mix Infinity with Inf. Also, Complex infs are not allowed
-function sanitize_infs(x1::Tuple, x2::Tuple)
-    s = sanitize_infs.(x1, x2)
-    return first.(s), last.(s)
-end
+error_if_mixed_infs(x1, x2) =
+    _error_if_mixed_infs(_sanitize_complex_inf(x1), _sanitize_complex_inf(x2))
 
-sanitize_infs(x1::NumberOrInfinity, x2::NumberOrInfinity) =
-    _sanitize_infs(sanitize_complex_inf(x1), sanitize_complex_inf(x2))
-_sanitize_infs(x1::NumberOrInfinity, x2::NumberOrInfinity) = (x1, x2)
-_sanitize_infs(x1::II.Infinity, x2::Number) = reverse(_sanitize_infs(x2, x1))
-_sanitize_infs(x1::Number, x2::II.Infinity) =
-    isinf(x1) ? throw(ArgumentError("Mixing `Inf` with `Infinity` is ambiguous.")) : (x1, x2)
-sanitize_complex_inf(x::Complex) =
+_error_if_mixed_infs(::Infinity, ::Infinity) = nothing
+_error_if_mixed_infs(_, _) = nothing
+_error_if_mixed_infs(::Infinity, x) = isinf_any(x) && error_mixed_infs()
+_error_if_mixed_infs(x, ::Infinity) = isinf_any(x) && error_mixed_infs()
+_sanitize_complex_inf(x::Complex) =
     isinf(x) ? throw(ArgumentError("Complex Inf not allowed in domains")) : x
-sanitize_complex_inf(x) = x
+
+_sanitize_complex_inf(p::Tuple) = _sanitize_complex_inf.(p)
+_sanitize_complex_inf(x) = x
+
+isinf_any(x::Number) = isinf(x)
+isinf_any(x::Tuple) = any(isinf, x)
+
+error_mixed_infs() = throw(ArgumentError("Mixing `Inf` with `Infinity` is ambiguous."))
+
 
 ## Show ##
 II.domainname(d::Sum) = string("Sum(", join(II.domainname.(d.subdomains), ", "), ")")
@@ -55,7 +80,7 @@ II.domainname(d::Functional) = "Functional{$(II.domainname(d.type))}"
 II.domainname(::Type{<:Box{N}}) where {N} = "Box{$N}"
 II.domainname(d::Type) = nameof(d)
 
-short_show(d::II.Infinity) = "Infinity($(II.point(d)))"
+short_show(d::Infinity) = "Infinity($(II.point(d)))"
 short_show(d::Number) = "$d"
 short_show(xs...) = join(short_show.(xs), ", ")
 

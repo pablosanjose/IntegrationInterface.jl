@@ -24,19 +24,19 @@ function (s::Backend.Quadrature)(f!, domain, result; kw...)
     return result
 end
 
-function node_weight_iterator(s::Backend.Quadrature{T}, xmin::Number, xmax::Number) where {T}
-    Δx = T(0.5) * (xmax - xmin)
+function node_weight_iterator(s::Backend.Quadrature, xmin::T, xmax::T) where {T<:Number}
+    Δx = T((xmax - xmin) / 2)
     error_if_inf(Δx)
-    itr = ((xmin + Δx * (t + 1), Δx * w) for (t, w) in zip(s.nodes, s.weights))
+    itr = ((xmin + Δx * T(t + 1), Δx * T(w)) for (t, w) in zip(s.nodes, s.weights))
     return itr
 end
 
-function node_weight_iterator(s::Backend.Quadrature{T}, mins::NTuple{N,Number}, maxs::NTuple{N,Number}) where {N,T}
-    Δxs = T(0.5) .* (maxs .- mins)
+function node_weight_iterator(s::Backend.Quadrature, mins::NTuple{N,T}, maxs::NTuple{N,T}) where {N,T<:Number}
+    Δxs = T.((maxs .- mins) ./ 2)
     error_if_inf.(Δxs)
     Δxprod = prod(Δxs)
     zs = Iterators.product(ntuple(Returns(zip(s.nodes, s.weights)), Val(N))...)
-    itr = ((mins .+ Δxs .* (first.(nws) .+ 1), Δxprod * prod(last.(nws))) for nws in zs)
+    itr = ((mins .+ Δxs .* T.(first.(nws) .+ 1), Δxprod * T(prod(last.(nws)))) for nws in zs)
     return itr
 end
 
