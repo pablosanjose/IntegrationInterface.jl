@@ -230,9 +230,14 @@ end
     @test J() ≈ 2π*im
 end
 
-@testset "Float32" begin
-    nodes, weights = gausslegendre(50)
-    J = Integral(cos, Domain.Box{1}(-Float32(π/2),Float32(π/2)); backend = Backend.Quadrature(Float32.(nodes), Float32.(weights)))
+@testset "type promotion" begin
+    @test Domain.Box(Int16(1),Infinity(Int32(3))) isa Domain.Box{1,Float64}
+    @test Domain.Box((1, 2.0f0), (3, Infinity(4))) isa Domain.Box{2,Float32}
+    @test Domain.Box((1, 2.0f0), (3, Infinity(4))) isa Domain.Box{2,Float32}
+    @test_throws ArgumentError Domain.Box((1u"A", 2.0f0), (3, Infinity(4)))
+    J = Integral(cos, Domain.Box{1}(-Int32(1),Int16(1)); backend = Backend.Quadrature(gausslegendre(50)))
+    @test J() isa Float64
+    J = Integral(cos, Domain.Box{1}(-Float32(π/2),Float32(π/2)); backend = Backend.Quadrature(gausslegendre(50)))
     @test J() isa Float32
     J = Integral(cos, Domain.Box{1}(-Float32(π/2),Float32(π/2)); backend = Backend.QuadGK())
     @test J() isa Float32
