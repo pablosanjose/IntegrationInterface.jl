@@ -22,6 +22,7 @@ struct Infinity{T}
 end
 
 Infinity(point::T) where {T} = Infinity{T}(point)
+Infinity(x1, x2, xs...) = Infinity((x1, x2, xs...))
 
 error_if_inf(point::Number) = isinf(point) && throw(ArgumentError("Ininity(Inf) not allowed"))
 error_if_inf(point::Tuple) = error_if_inf.(point)

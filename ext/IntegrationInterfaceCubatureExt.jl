@@ -15,8 +15,9 @@ function II.convert_integrand(i::II.Integral{<:Any,<:Backend.Cubature}, d, args;
     f! = II.integrand(i)
     result = II.result(i)
     function fd!(t, out)
-        f!(II.deserialize_array(out, result), II.change_of_variables(t, d)..., args...; kw...)
-        II.deserialize_array(out, result) .*= II.jacobian(t, d)
+        x, dx = II.change_of_variables(t, d)
+        f!(II.deserialize_array(out, result), x..., args...; kw...)
+        II.deserialize_array(out, result) .*= dx
         return out
     end
     return fd!

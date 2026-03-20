@@ -48,4 +48,6 @@ struct HAdaptiveIntegration{O<:NamedTuple} <: AbstractBackend
 	opts::O
 end
 
+HAdaptiveIntegration(; opts...) = HAdaptiveIntegration(NamedTuple(opts))
+
 end # module
