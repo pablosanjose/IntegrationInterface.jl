@@ -130,7 +130,7 @@ end
 ## Show ##
 II.domainname(d::Box{1,T}) where {T}= "Box{1,$T}($(short_show(only(d.mins))), $(short_show(only(d.maxs))))"
 II.domainname(d::Box{N,T}) where {N,T} = "Box{$N, $T}(($(short_show(d.mins...))), ($(short_show(d.maxs...)))))"
-II.domainname(d::Simplex{N,T}) where {N,T} = "Simplex{$N, $T}($(short_show(d.vertices...))))"
+II.domainname(d::Simplex{N,T}) where {N,T} = "Simplex{$N, $T}($(join(short_show.(d.vertices), ", "))))"
 II.domainname(::Type{<:Box{N}}) where {N} = "Box{$N}"
 II.domainname(::Type{<:Simplex{N}}) where {N} = "Simplex{$N}"
 II.domainname(d::Functional) = "Functional{$(II.domainname(d.type))}"
@@ -138,8 +138,9 @@ II.domainname(d::Sum) = string("Sum(", join(II.domainname.(d.subdomains), ", "),
 II.domainname(d::Type) = nameof(d)
 
 short_show(d::Infinity) = "Infinity($(II.point(d)))"
+short_show(d::Infinity{<:Tuple}) = "Infinity$(II.point(d))"
 short_show(d::Number) = "$d"
-short_show(xs::Tuple) = join(short_show.(xs), ", ")
+short_show(xs::Tuple) = string("(", join(short_show.(xs), ", "), ")")
 short_show(xs...) = join(short_show.(xs), ", ")
 
 ## API ##
