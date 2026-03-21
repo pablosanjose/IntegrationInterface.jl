@@ -1,6 +1,7 @@
 """
 `Domain` is a submodule of `IntegrationInterface` that bundles possible integration domains.
 Currently it provides
+
     - `Domain.Box{N}`: N-dimensional hypercube domain that may be bounded or unbounded.
     - `Domain.Simplex{N}`: N-dimensional simplex domain that may be bounded or unbounded.
 
@@ -13,6 +14,7 @@ Domain
 `Backend` is a submodule of `IntegrationInterface` that bundles available integration
 backends, each relying on an external package that must be loaded for use.
 Currently it provides
+
     - `Backend.QuadGK(; opts...)`: 1-dimensional integrals `using QuadGK` (calls `quadgk`)
     - `Backend.HCubature(; opts...)`: N-dimensional integrals `using HCubature` (calls `hcubature`)
     - `Backend.Cubature(; opts...)`: N-dimensional integrals `using Cubature` (calls `hcubature`)
