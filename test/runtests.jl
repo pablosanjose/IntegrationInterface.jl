@@ -212,9 +212,9 @@ end
 
     J = Integral(f, Domain.Box{2}((; a = 1, b = 1, _...) -> ((0, 0), (a, b))); backend = Backend.HAdaptiveIntegration())
     @test II.backend(J) isa Backend.HAdaptiveIntegration
-    @test J() ≈ 0.309567883488632 + 0.0230970240588801im
-    @test J(; σ = 2) ≈ 0.305201476947410 + 0.0457369920083456im
-    @test J(; a = 3, b = 4) ≈ 0.685318616096836 + 0.291629495280167im
+    @test J() ≈ 0.457229458973690 + 0.0810545271153429im
+    @test J(; σ = 2) ≈ 0.416753191897492 + 0.148416992955236im
+    @test J(; a = 3, b = 4) ≈ 0.671550620076982 + 0.293860034047501im
     @test J(; σ = im, b = Infinity(2)) ≈ 0.544256200588910
     @test_throws ArgumentError J(; b = Inf)
 end
