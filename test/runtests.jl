@@ -217,6 +217,10 @@ end
     @test J(; a = 3, b = 4) ≈ 0.671550620076982 + 0.293860034047501im
     @test J(; σ = im, b = Infinity(2)) ≈ 0.544256200588910
     @test_throws ArgumentError J(; b = Inf)
+
+    # 1D case
+    @test integral(x -> exp(-x^2), Domain.interval(0, Infinity(1)), backend = Backend.HAdaptiveIntegration()) isa Number
+    @test integral(x -> exp(-x^2), Domain.Simplex((0,), Infinity((1,))), backend = Backend.HAdaptiveIntegration()) isa Number
 end
 
 @testset "Nested" begin
