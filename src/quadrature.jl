@@ -26,18 +26,18 @@ end
 
 function node_weight_iterator(s::Backend.Quadrature, xmin::T, xmax::T) where {T<:Number}
     Δx = T((xmax - xmin) / 2)
-    error_if_inf(Δx)
+    error_if_inf_Quadrature(Δx)
     itr = ((xmin + Δx * T(t + 1), Δx * T(w)) for (t, w) in zip(s.nodes, s.weights))
     return itr
 end
 
 function node_weight_iterator(s::Backend.Quadrature, mins::NTuple{N,T}, maxs::NTuple{N,T}) where {N,T<:Number}
     Δxs = T.((maxs .- mins) ./ 2)
-    error_if_inf.(Δxs)
+    error_if_inf_Quadrature.(Δxs)
     Δxprod = prod(Δxs)
     zs = Iterators.product(ntuple(Returns(zip(s.nodes, s.weights)), Val(N))...)
     itr = ((mins .+ Δxs .* T.(first.(nws) .+ 1), Δxprod * T(prod(last.(nws)))) for nws in zs)
     return itr
 end
 
-error_if_inf(x) = isinf(x) && throw(ArgumentError("The Quadrature backend cannot deal with domains with `Inf`s. Use `Infinity` instead."))
+error_if_inf_Quadrature(x) = isinf(x) && throw(ArgumentError("The Quadrature backend cannot deal with domains with `Inf`s. Use `Infinity` instead."))

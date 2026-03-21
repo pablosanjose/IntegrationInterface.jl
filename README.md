@@ -10,7 +10,7 @@ The general interface reads
 ```julia
 julia> J = Integral(f, domain; backend::AbstractBackend = default_backend(domain), result = nothing)
 ```
-This produces an `J::Integral` object. Currently, only bounded and unbounded hypercube domains are possible. They are created with `Domain.Box((a₁, a₂, ...), (b₁, b₂, ...))` or `Domain.interval((a₁, b₁), (a₂, b₂)...)` in terms of intervals `(aᵢ, bᵢ)` along dimension `i`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments and keywords passed to `J`, see `Domain.Box`.
+This produces an `J::Integral` object. Currently, only bounded and unbounded hypercube domains and simplices are possible. Hypercubes are created with `Domain.Box((a₁, a₂, ...), (b₁, b₂, ...))` or `Domain.interval((a₁, b₁), (a₂, b₂)...)` in terms of intervals `(aᵢ, bᵢ)` along dimension `i`. Simplices are defined in terms of n+1 vertices in n-dimensional space, with `Domain.Simplex(v₁, v₂,...,vₙ₊₁)`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments and keywords passed to `J`, see `Domain.Box` or `Domain.Simplex`
 
 Mutating functions `f!(out, x..., args...; kw...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
@@ -37,12 +37,16 @@ julia> integral(cos, Domain.interval(0, π/2)) # Defaults to Backend.QuadGK()
 
 ### 2D integral
 ```julia
-julia> using HCubature
+julia> using HCubature, HAdaptiveIntegration
 [ Info: Precompiling IntegrationInterfaceQuadGKExt [6a486dfe-6a5b-5d49-a9f9-02f4245ab8d6]
 [ Info: Precompiling IntegrationInterfaceHCubatureExt [b56c1907-5b79-5f70-9c8b-cc15ee23dcd1]
+[ Info: Precompiling IntegrationInterfaceHAdaptiveIntegrationExt [6c915174-9fe5-54f3-904c-38242f473220]
 
 julia> integral((x,y) -> cos(x-y), Domain.Box((-1,-1), (1,1))) # Defaults to Backend.HCubature()
 2.8322936730937722
+
+julia> integral((x,y) -> cos(x-y), Domain.Simplex((0,0), (1, 1/2), (1/2, 1))) # Defaults to Backend.HAdaptiveIntegration()
+0.36725231432888195
 ```
 
 ## Backends
@@ -52,6 +56,7 @@ As shown above, the integration is actually performed by backend packages that m
 - QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, default for `Domain.Box{1}` domains)
 - HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, default for `Domain.Box{N}` domains with `N ≠ 1`)
 - Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`)
+- HAdaptiveIntegration.jl: `Backend.HAdaptiveIntegration(; opts...)` (calls `integrate`, default for `Domain.Simplex`)
 
 We also provide a `Backend.Quadrature((nodes, weights))` backend that can be used e.g. with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. The `Backend.Quadrature` package then uses these values for integrals over any `Domain.Box{N}` for any `N`.
 ```julia
@@ -62,14 +67,14 @@ julia> f(x) = cos(x);
 julia> J1 = Integral(f, Domain.interval(3,5); backend = Backend.Quadrature(gausslegendre(10)))
 Integral
   Mutating   : false
-  Domain     : Box{1}(3, 5)
+  Domain     : Box{1,Float64}(3.0, 5.0)
   Backend    : Quadrature
   Integrand  : f
 
 julia> J2 = Integral(f, Domain.interval(3,5); backend = Backend.QuadGK())
 Integral
   Mutating   : false
-  Domain     : Box{1}(3, 5)
+  Domain     : Box{1,Float64}(3.0, 5.0)
   Backend    : QuadGK
   Integrand  : f
 
@@ -94,18 +99,18 @@ f (generic function with 2 methods)
 julia> J1 = f |> Integral(Domain.interval(0,1)) |> Integral(Domain.interval(2,3))
 Integral
   Mutating   : false
-  Domain     : Box{1}(2, 3)
+  Domain     : Box{1,Float64}(2.0, 3.0)
   Backend    : QuadGK
   Integrand  : Integral
     Mutating   : false
-    Domain     : Box{1}(0, 1)
+    Domain     : Box{1,Float64}(0.0, 1.0)
     Backend    : QuadGK
     Integrand  : f
 
 julia> J2 = Integral(f, Domain.interval((0,1), (2,3)); backend = Backend.HCubature())
 Integral
   Mutating   : false
-  Domain     : Box((0, 2), (1, 3))
+  Domain     : Box{2, Float64}((0.0, 2.0), (1.0, 3.0)))
   Backend    : HCubature
   Integrand  : f
 
@@ -124,7 +129,7 @@ can be expressed as
 julia> J = f |> Integral(Domain.Box{1}(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> Integral(Domain.Box{1}(-1,1))
 Integral
   Mutating   : false
-  Domain     : Box{1}(-1, 1)
+  Domain     : Box{1,Float64}(-1.0, 1.0)
   Backend    : QuadGK
   Integrand  : Integral
     Mutating   : false
@@ -140,20 +145,27 @@ where we have passed a function to the `Domain.Box{1}` instead of the box bounds
 
 ## Infinity
 
-Some backends support using `Inf` to express unbounded domains. If that is not supported, we provide `Infinity(point::Number)` that can be used in box bounds instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `D = Domain.Box((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))))`. Note that it is a `Domain.Functional` object that depends on a keyword argument `σ`. We can integrate a Gaussian over `D`, which gives `π` for `σ = 1`
+Only a few backends support using `Inf` to express unbounded domains. For those that don't support it, we provide `Infinity(point::Number)` that can be used in box bounds instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `D = Domain.Box{2}((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))))`. Note that it is a `Domain.Functional` object that depends on a keyword argument `σ`. We can integrate a Gaussian over `D`, which gives `π` for `σ = 1`
 
 ```julia
 julia> f(x, y; σ = 1) = exp(-0.5*(x^2+y^2)/σ^2);
 
-julia> D = Domain.Box((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))));
+julia> D = Domain.Box{2}((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))));
 
 julia> J = Integral(f, D)
 Integral
   Mutating   : false
-  Domain     : Functional{Box}
+  Domain     : Functional{Box{2}}
   Backend    : HCubature
   Integrand  : f
 
 julia> J(; σ = 1)
 3.141592652846476
 ```
+
+Simplices can be made unbounded by wrapping one or more (but not all) of its vertices `vᵢ` in `Infinity(vᵢ...)`. This corresponds to moving the vertex to infinity along a ray passing through it in the direction perpedicular to the opposite facet. For example, this integrates `exp(-z)` in a semi-infinite vertical prism with a triangular base
+```julia
+julia> integral((x,y,z) -> exp(-z), Domain.Simplex((1,0,0), (-1,-1,0), (-1,1,0), Infinity(0,0,1)))
+-2.000000000125864
+```
+Note that the integral preserves the sign of the simplex volume, which is negative in this case due to the order chosen for the vertices.

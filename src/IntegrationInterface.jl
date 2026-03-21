@@ -13,8 +13,9 @@ include("types.jl")
 include("serialization.jl")
 include("domains.jl")
 include("backends.jl")
+include("quadrature.jl")       # implementation of Backend.Quadrature, no extension required
 include("integral.jl")
-include("quadrature.jl")  # implementation of Backend.Quadrature, no extension required
+include("interface.jl")
 include("changeofvariables.jl")
 include("docstrings.jl")
 

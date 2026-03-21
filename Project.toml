@@ -7,14 +7,15 @@ version = "0.1.0-DEV"
 
 [weakdeps]
 Cubature = "667455a9-e2ce-5579-9412-b964f529a492"
+HAdaptiveIntegration = "eaa5ad34-b243-48e9-b09c-54bc0655cecf"
 HCubature = "19dc6840-f33b-545b-b366-655c7e3ffd49"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [extensions]
 IntegrationInterfaceCubatureExt = "Cubature"
+IntegrationInterfaceHAdaptiveIntegrationExt = "HAdaptiveIntegration"
 IntegrationInterfaceHCubatureExt = "HCubature"
 IntegrationInterfaceLinearAlgebraExt = "LinearAlgebra"
 IntegrationInterfaceQuadGKExt = "QuadGK"
@@ -23,17 +24,10 @@ IntegrationInterfaceSparseArraysExt = "SparseArrays"
 [compat]
 julia = "1.10"
 
-[dependencies]
-IntegrationInterfaceCubatureExt = "Cubature"
-IntegrationInterfaceHCubatureExt = "HCubature"
-IntegrationInterfaceLinearAlgebraExt = "LinearAlgebra"
-IntegrationInterfaceQuadGKExt = "QuadGK"
-IntegrationInterfaceSparseArraysExt = "SparseArrays"
-
 [extras]
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["Test", "QuadGK", "HCubature", "Cubature", "FastGaussQuadrature", "Unitful"]
+test = ["Test", "QuadGK", "HCubature", "Cubature", "HAdaptiveIntegration", "FastGaussQuadrature", "Unitful"]

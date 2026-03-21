@@ -1,55 +1,84 @@
-### Change of variables and corresponding domain transformations ###
-
-
-### Infinity ###
-# Deal with Infinity and complex domain bounds.
-# See https://github.com/pablosanjose/IntegrationInterface.jl/issues/3 for details
-
-## API ##
-
-point(d::Infinity) = d.point
-point(x::Number) = x
-
-Base.:+(d::Infinity) = d
-Base.:-(d::Infinity) = Infinity(-point(d))
-
-## Tools for convert_integrand in the presence of Infinity and complex domains ##
-
-# fallbacks
-change_of_variables(t, ::AbstractDomain) = t
+## Fallbacks
 
 transform_domain(d::AbstractDomain) = d
 
-jacobian(t, d::AbstractDomain) = 1
+change_of_variables(t, ::AbstractDomain) = t, 1
 
-# Domain.Box1D
+## 1D Transforms
+
+transform_01(t, x0, x1, t0) = (x0 + (x1 - x0) * t/t0, (x1 - x0)/t0)
+transform_0Inf(t, x0, x1, t0) =
+    (x0 + (x1 - x0) * (t/t0) / (1 - t/t0),
+    (x1 - x0) / (t0 * (1 - t/t0)^2))
+transform_InfInf(t::T, x0, x1, t0) where {T} =
+    ((x0 + x1)/2 + (x1 - x0) * T(0.75) * (t/t0) / (1 - (t/t0)^2),
+    T(0.75) * (x1 - x0)/t0 * (1 + (t/t0)^2) / (1 - (t/t0)^2)^2)
+
+transform1D(t, x0::Number, x1::Infinity, t0) = transform_0Inf(t, x0, point(x1), t0)
+transform1D(t, x0::Infinity, x1::Number, t0) = transform_0Inf(t, x1, point(x0), t0) .* (1, -1)
+transform1D(t, x0::Infinity, x1::Infinity, t0) = transform_InfInf(t, point(x0), point(x1), t0)
+# Anything number that is not real (e.g. complex, unitful) is converted for compatibility
+transform1D(t, x0::Number, x1::Number, t0) = transform_01(t, x0, x1, t0)
+
+## Domain.Box{1}
+
 const Box1D{T1,T2} = Domain.Box{1,<:Any,Tuple{T1},Tuple{T2}}
 
-change_of_variables(t, d::Box1D{<:Number,<:Infinity}) = first(d) + delta(d) * t/(1-t)
-change_of_variables(t, d::Box1D{<:Infinity, <:Number}) = last(d) - delta(d) * t/(1-t)
-change_of_variables(t, d::Box1D{<:Infinity, <:Infinity}) =
-    0.5*(point(first(d))+point(last(d))) + 0.75 * delta(d) * t/(1-t^2)
-# Anything number that is not real (e.g. complex, unitful) is converted for compatibility
-change_of_variables(t, d::Box1D{<:Number,<:Number}) = first(d) + delta(d)*t
-change_of_variables(t, ::Box1D{<:Real,<:Real}) = t             # no transformation
-
-jacobian(t, d::Box1D{<:Number,<:Infinity}) = delta(d)/(1-t)^2
-jacobian(t, d::Box1D{<:Infinity,<:Number}) = delta(d)/(1-t)^2
-jacobian(t, d::Box1D{<:Infinity,<:Infinity}) = 0.75*delta(d)*(1+t^2)/(1-t^2)^2
-jacobian(t, d::Box1D{<:Number,<:Number}) = delta(d)
-jacobian(t, ::Box1D{<:Real,<:Real}) = 1                        # no transformation
-
-transform_domain(::Box1D{<:Number,<:Infinity}) = Domain.Box{1}(0.0, 1.0)
-transform_domain(::Box1D{<:Infinity,<:Number}) = Domain.Box{1}(0.0, 1.0)
-transform_domain(::Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1.0, 1.0)
-transform_domain(::Box1D{<:Number,<:Number}) = Domain.Box{1}(0.0, 1.0)
+# We don't use floats to preserve Float32 compatibility
+transform_domain(::Box1D{<:Number,<:Infinity}) = Domain.Box{1}(0, 1)
+transform_domain(::Box1D{<:Infinity,<:Number}) = Domain.Box{1}(0, 1)
+transform_domain(::Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1, 1)
+transform_domain(::Box1D{<:Number,<:Number}) = Domain.Box{1}(0, 1)
 transform_domain(d::Box1D{<:Real,<:Real}) = d                  # no transformation
 
-delta(d::Box1D) = point(last(d)) - point(first(d))
+change_of_variables(t, d::Box1D) = transform1D(t, d, 1)
+change_of_variables(t, ::Box1D{<:Real,<:Real}) = (t, 1)
 
-# Domain.Box - this is finicky, can easily produce allocations
-change_of_variables(t, d::Domain.Box) = change_of_variables.(t, Domain.to_1D_boxes(d))
+transform1D(t, d::Box1D, t0) = transform1D(t, first(d), last(d), t0)
 
-jacobian(t, d::Domain.Box) = prod(jacobian.(t, Domain.to_1D_boxes(d)))
+## Domain.Box{N}
 
 transform_domain(d::Domain.Box) = Domain.to_box(transform_domain.(Domain.to_1D_boxes(d)))
+
+function change_of_variables(t, d::Domain.Box)
+    xdx = change_of_variables.(t, Domain.to_1D_boxes(d))
+    x, dx = first.(xdx), prod(last, xdx)
+    return x, dx
+end
+
+## Domain.Simplex{N}
+# Optimal change of variables requires StaticArrays, a dependency of HAdaptiveIntegration,
+# so we define the corresponding dispatches in its extension.
+
+transform_domain(s::Domain.FiniteRealSimplex) = s
+transform_domain(s::Domain.InfiniteSimplex) = Domain.orthogonal(s, -1, 1)
+transform_domain(s::Domain.Simplex) = Domain.orthogonal(s, 0, 1)
+
+change_of_variables(t, ::Domain.FiniteRealSimplex) = (t, 1)
+
+function change_of_variables(ts, d::Domain.Simplex{N}) where {N}
+    origin, basis, boxes, signature = Domain.basisdata(d)
+    T = eltype(ts)
+    dx = Ref(T(signature))
+    t0 = Ref(one(T))
+    x = Tuple(simplex_t_to_x.(ts, boxes; dx, t0))
+    x´ = origin .+ tuplematvec(basis, x)
+    # dx *= det(basis)  # Disabled for performance, see below
+    return x´, dx[]
+end
+# WARNING: there is a missing det(basis) in dx here. We compute and multiply by it only
+# at the end for performance.
+# This should be done by the backends, preferrably using StaticArrays when available!
+
+function simplex_t_to_x(ti, bi; dx, t0)
+    xi, dxi = transform1D(ti, bi, t0[])
+    if last(bi) isa Infinity
+        t0[] -= ti
+    end
+    dx[] *= dxi
+    return xi
+end
+
+# Make do without StaticArrays! mat is tuple of column tuples
+tuplematvec(mat::NTuple{N,NTuple{N,Any}}, vec::NTuple{N,Any}) where {N} =
+    ntuple(row -> sum(col -> mat[col][row] * vec[col], 1:N), Val(N))

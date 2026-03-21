@@ -21,6 +21,7 @@ error_if_Inf(x::Number) = isinf(x) &&
 error_if_Inf(x::Infinity) = false
 
 ensure_real_or_complex(x::Union{Real,Complex}) = x
+ensure_real_or_complex(x::AbstractArray{<:Union{Real,Complex}}) = x
 ensure_real_or_complex(_) = throw(ArgumentError("HCubature only understand functions with Real or Complex values or eltypes, but not other Numbers like Unitful."))
 
 end # module
