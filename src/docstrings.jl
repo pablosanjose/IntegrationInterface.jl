@@ -2,8 +2,8 @@
 `Domain` is a submodule of `IntegrationInterface` that bundles possible integration domains.
 Currently it provides
 
-    - `Domain.Box{N}`: N-dimensional hypercube domain that may be bounded or unbounded.
-    - `Domain.Simplex{N}`: N-dimensional simplex domain that may be bounded or unbounded.
+- `Domain.Box{N}`: N-dimensional hypercube domain that may be bounded or unbounded.
+- `Domain.Simplex{N}`: N-dimensional simplex domain that may be bounded or unbounded.
 
 It also provides the `Domain.interval` function, an alternative way to build `Domain.Box`
 domains
@@ -15,14 +15,14 @@ Domain
 backends, each relying on an external package that must be loaded for use.
 Currently it provides
 
-    - `Backend.QuadGK(; opts...)`: 1-dimensional integrals `using QuadGK` (calls `quadgk`)
-    - `Backend.HCubature(; opts...)`: N-dimensional integrals `using HCubature` (calls `hcubature`)
-    - `Backend.Cubature(; opts...)`: N-dimensional integrals `using Cubature` (calls `hcubature`)
-    - `Backend.HAdaptiveIntegration(; opts...)`: N-dimensional integrals `using HAdaptiveIntegration` (calls `integrate`)
-    - `Backend.Quadrature((nodes, weights))`: N-dimensional integrals using user-provided nodes and weights.
-        - Nodes and weights are assumed to correspond to interval `[-1,1]`.
-        - These can be computed with external packages, such as FastGaussQuadrature.jl
-        - The form `Backend.Quadrature(nodes, weights)` is also provided.
+- `Backend.QuadGK(; opts...)`: 1-dimensional integrals `using QuadGK` (calls `quadgk`)
+- `Backend.HCubature(; opts...)`: N-dimensional integrals `using HCubature` (calls `hcubature`)
+- `Backend.Cubature(; opts...)`: N-dimensional integrals `using Cubature` (calls `hcubature`)
+- `Backend.HAdaptiveIntegration(; opts...)`: N-dimensional integrals `using HAdaptiveIntegration` (calls `integrate`)
+- `Backend.Quadrature((nodes, weights))`: N-dimensional integrals using user-provided nodes and weights.
+    - Nodes and weights are assumed to correspond to interval `[-1,1]`.
+    - These can be computed with external packages, such as FastGaussQuadrature.jl
+    - The form `Backend.Quadrature(nodes, weights)` is also provided.
 
 Options `opts` are passed to the corresponding integration routine. Check the package
 documentation for details.
