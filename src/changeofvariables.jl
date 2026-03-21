@@ -31,8 +31,9 @@ transform_domain(::Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1, 1)
 transform_domain(::Box1D{<:Number,<:Number}) = Domain.Box{1}(0, 1)
 transform_domain(d::Box1D{<:Real,<:Real}) = d                  # no transformation
 
-change_of_variables(t, d::Box1D) = transform1D(t, d, 1)
-change_of_variables(t, ::Box1D{<:Real,<:Real}) = (t, 1)
+# Need only in case t is a Tuple{Number} or SVector{1}
+change_of_variables(t, d::Box1D) = transform1D(only(t), d, 1)
+change_of_variables(t, ::Box1D{<:Real,<:Real}) = (only(t), 1)
 
 transform1D(t, d::Box1D, t0) = transform1D(t, first(d), last(d), t0)
 
