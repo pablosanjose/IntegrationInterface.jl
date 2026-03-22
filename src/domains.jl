@@ -192,6 +192,11 @@ Base.last(d::Box) = d.maxs
 
 vertices(s::Simplex) = s.vertices
 
+# Fast check for domains with zero measure
+
+is_obviously_empty(d::Box) = any(d.mins .== d.maxs)
+is_obviously_empty(d::Simplex) = anypair(isequal, d.vertices)
+
 # ungroup domain sums
 
 II.ungroup(ss::Sum) = ss.subdomains
@@ -263,6 +268,5 @@ cast(T::Type, a::Number) = convert(T, a)
 
 maybe_Infinity(x, ::Infinity) = Infinity(x)
 maybe_Infinity(x, _) = x
-
 
 end # module

@@ -21,9 +21,14 @@ integrate(i::Integral, domain, args; kw...) =
     i.backend(convert_integrand(i, domain, args; kw...), convert_domain(domain, i.backend), i.result)
 
 # Any Domain Sum is handled by summing over the domains ##
+# we skip all empty domains (except perhaps the first, for type stability)
+
 # non-mutating version
 function integrate(i::Integral{Nothing}, domain::Domain.Sum, args; kw...)
-    result = sum(ungroup(domain)) do subdomain
+    s0, subdomains = Iterators.peel(ungroup(domain))
+    firstintegral = integrate(i, evaluate_domain(s0, args; kw...), args; kw...)
+    result = sum(subdomains; init = firstintegral) do subdomain
+        Domain.is_obviously_empty(subdomain) ? zero(firstintegral) :
         integrate(i, evaluate_domain(subdomain, args; kw...), args; kw...)
     end
     return result
@@ -33,7 +38,9 @@ end
 function integrate(i::Integral, domain::Domain.Sum, args; kw...)
     resultsum = zero(result(i))
     foreach(ungroup(domain)) do subdomain
-        resultsum .+= integrate(i, evaluate_domain(subdomain, args; kw...), args; kw...)
+        if !(Domain.is_obviously_empty(subdomain))
+            resultsum .+= integrate(i, evaluate_domain(subdomain, args; kw...), args; kw...)
+        end
     end
     return resultsum
 end
