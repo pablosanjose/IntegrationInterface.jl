@@ -249,11 +249,11 @@ end
 
 @testset "Domain sums" begin
     f(x) = 1/(x^2+1)
-    J = Integral(f, Domain.Box(0, 1, 1+2im, -1+2im, -1, 0))
+    J = Integral(f, Domain.interval(0, 1, 1+2im, -1+2im, -1, 0))
     @test J() ≈ π
     f(x) = 1/(x-im)
     @test J() ≈ 2π*im
-    J = Integral(f, Domain.Box([0, 1, 1+2im, -1+2im, -1, 0]); backend = Backend.QuadGK())
+    J = Integral(f, Domain.interval([0, 1, 1+2im, -1+2im, -1, 0]); backend = Backend.QuadGK())
     @test J() ≈ 2π*im
 end
 
