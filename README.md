@@ -117,7 +117,7 @@ Integral
 julia> (J1(), J2())
 (-3.800374064781164, -3.800374064812097)
 ```
-Note the currying syntax used above for `J1`. It is equivalent to `J1 = Integral(Integral(f, Domain.Box{1}(0,1)), Domain.Box{1}(2,3))`.
+Note the currying syntax used above for `J1`. It is equivalent to `J1 = Integral(Integral(f, Domain.Box(0,1)), Domain.Box(2,3))`.
 
 ## Functional domains
 We can also make domains depend on `args` and `kw`s. In the above, this allows the inner domain to depend on outer integration variables. This provides one way to integrate over non-Box domains. For example,
@@ -126,7 +126,7 @@ $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = f |> Integral(Domain.Box{1}(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> Integral(Domain.Box{1}(-1,1))
+julia> J = f |> Integral(Domain.Box{1}(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> Integral(Domain.Box(-1,1))
 Integral
   Mutating   : false
   Domain     : Box{1,Float64}(-1.0, 1.0)

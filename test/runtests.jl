@@ -12,10 +12,10 @@ const II = IntegrationInterface
 @testset begin "integral"
     f(x) = cos(x)
     f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
-    @test integral(f, Domain.Box{1}(0,π/2)) ≈ 1
-    @test integral(f, Domain.Box{1}(0,π/2), 2; σ = 1) ≈ π/2
-    @test f |> integral(Domain.Box{1}(0,π/2), 2; σ = 1) ≈ π/2
-    @test integral(x -> exp(-x), Domain.Box{1}(0, Infinity(1))) ≈ 1
+    @test integral(f, Domain.Box(0,π/2)) ≈ 1
+    @test integral(f, Domain.Box(0,π/2), 2; σ = 1) ≈ π/2
+    @test f |> integral(Domain.Box(0,π/2), 2; σ = 1) ≈ π/2
+    @test integral(x -> exp(-x), Domain.Box(0, Infinity(1))) ≈ 1
     @test integral((x,y) -> exp(-x-y), Domain.Box((0, 0), (Infinity(1), Infinity(1)))) ≈ 1
     @test integral((x; σ = 1) -> exp(-x/σ), Domain.Box{1}((; σ=1) -> (0, Infinity(σ))); σ = 4) ≈ 4
     @test integral((x, a; σ = 1) -> a*exp(-x/σ), Domain.Box{1}((a; σ=1) -> (0, Infinity(σ))), 4; σ = 4) ≈ 16
@@ -24,13 +24,13 @@ end
 @testset begin "Unitful"
     # 1D
     f(x) = √(1 - x^2) * u"A"
-    J1 = Integral(f, Domain.Box{1}(-1,1))
-    J2 = Integral(f, Domain.Box{1}(-1,1); backend = Backend.Quadrature(gausslegendre(50)))
+    J1 = Integral(f, Domain.Box(-1,1))
+    J2 = Integral(f, Domain.Box(-1,1); backend = Backend.Quadrature(gausslegendre(50)))
     @test J1() ≈ π/2 * u"A"
     @test J2() ≈ π/2 * u"A" atol = 1e-4*u"A"
     f(x) = √(1u"A"^2 - x^2)
-    J1 = Integral(f, Domain.Box{1}(-1u"A",1u"A"))
-    J2 = Integral(f, Domain.Box{1}(-1u"A",1u"A"); backend = Backend.Quadrature(gausslegendre(50)))
+    J1 = Integral(f, Domain.Box(-1u"A",1u"A"))
+    J2 = Integral(f, Domain.Box(-1u"A",1u"A"); backend = Backend.Quadrature(gausslegendre(50)))
     @test J1() ≈ π/2 * u"A"^2
     @test J2() ≈ π/2 * u"A"^2 atol = 1e-4*u"A"^2
     # 2D
@@ -47,7 +47,7 @@ end
     # basics 1D
     f(x) = cos(x)
     f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
-    J = Integral(f, Domain.Box{1}(0,π/2); backend)
+    J = Integral(f, Domain.Box(0,π/2); backend)
     @test II.backend(J) isa Backend.Quadrature     #default
     @test J() ≈ 1
     @test J(2; σ = 1) ≈ π/2
@@ -65,16 +65,16 @@ end
     @test J() ≈ π
 
     # Infs
-    J = Integral(f, Domain.Box{1}(0, Inf); backend)
+    J = Integral(f, Domain.Box(0, Inf); backend)
     @test_throws ArgumentError J(1; σ = 0, λ = 1) ≈ 0.5
-    J = Integral(f, Domain.Box{1}(-Inf, Inf); backend)
+    J = Integral(f, Domain.Box(-Inf, Inf); backend)
     @test_throws ArgumentError J(1; σ = 0, λ = 1) ≈ 1.0
-    J = Integral(f, Domain.Box{1}(0,Infinity(1)); backend)
+    J = Integral(f, Domain.Box(0,Infinity(1)); backend)
     @test J(1; σ = 0, λ = 1) ≈ 0.5 atol = 1e-3
-    J = Integral(f, Domain.Box{1}(-Infinity(1), Infinity(1)); backend)
+    J = Integral(f, Domain.Box(-Infinity(1), Infinity(1)); backend)
     @test J(1; σ = 0, λ = 1) ≈ 1.0 atol = 1e-3
      # mixing Inf with Infinity is ambiguous
-    @test_throws ArgumentError Integral(f, Domain.Box{1}(-Infinity(1), Inf))
+    @test_throws ArgumentError Integral(f, Domain.Box(-Infinity(1), Inf))
 
     # bounds as args
     g(x, _...) = exp(-0.5*x^2)
@@ -97,23 +97,23 @@ end
     # basics
     f(x) = cos(x)
     f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
-    J = Integral(f, Domain.Box{1}(0,π/2))
+    J = Integral(f, Domain.Box(0,π/2))
     @test II.backend(J) isa Backend.QuadGK     #default
     @test J() ≈ 1
     @test J(2; σ = 1) ≈ π/2
     @test J(1; σ = 0, λ = 1) ≈ 0.5*(1+exp(-π/2))
 
     # Infs
-    J = Integral(f, Domain.Box{1}(0, Inf))
+    J = Integral(f, Domain.Box(0, Inf))
     @test J(1; σ = 0, λ = 1) ≈ 0.5
-    J = Integral(f, Domain.Box{1}(-Inf, Inf))
+    J = Integral(f, Domain.Box(-Inf, Inf))
     @test J(1; σ = 0, λ = 1) ≈ 1.0
-    J = Integral(f, Domain.Box{1}(0,Infinity(1)))
+    J = Integral(f, Domain.Box(0,Infinity(1)))
     @test J(1; σ = 0, λ = 1) ≈ 0.5
-    J = Integral(f, Domain.Box{1}(-Infinity(1), Infinity(1)))
+    J = Integral(f, Domain.Box(-Infinity(1), Infinity(1)))
     @test J(1; σ = 0, λ = 1) ≈ 1.0
      # mixing Inf with Infinity is ambiguous
-    @test_throws ArgumentError Integral(f, Domain.Box{1}(-Infinity(1), Inf))
+    @test_throws ArgumentError Integral(f, Domain.Box(-Infinity(1), Inf))
 
     # bounds as args
     g(x, _...) = exp(-0.5*x^2)
@@ -226,34 +226,34 @@ end
 @testset "Nested" begin
     # 2D
     f(x, y) = cos(x^2+y)*exp(-0.5*(x^2+2y^2))
-    J1 = f |> Integral(Domain.Box{1}(-Inf, Inf)) |> Integral(Domain.Box{1}(-Infinity(1),Infinity(1)))
+    J1 = f |> Integral(Domain.Box(-Inf, Inf)) |> Integral(Domain.Box(-Infinity(1),Infinity(1)))
     J2 = f |> Integral(Domain.Box((-Infinity(1), -Infinity(1)),(Infinity(1), Infinity(1))))
     @test J1() ≈ J2()
-    J1 = f |> Integral(Domain.Box{1}(0, 20)) |> Integral(Domain.Box{1}(-Infinity(1),Infinity(5)))
+    J1 = f |> Integral(Domain.Box(0, 20)) |> Integral(Domain.Box(-Infinity(1),Infinity(5)))
     J2 = f |> Integral(Domain.Box((0, -Infinity(1)),(20, Infinity(1))))
     @test J1() ≈ J2()
     # 3D
     f(x, y, z) = cos(x+2y+3z)
-    J1 = f |> Integral(Domain.Box{1}(-1, 1)) |> Integral(Domain.Box((0, 0),(1, 2+im)))
-    J2 = f |> Integral(Domain.Box((-1, 0),(1, 1))) |> Integral(Domain.Box{1}(0, 2+im))
-    J3 = f |> Integral(Domain.Box{1}(-1, 1)) |> Integral(Domain.Box{1}(0, 1)) |> Integral(Domain.Box{1}(0, 2+im))
+    J1 = f |> Integral(Domain.Box(-1, 1)) |> Integral(Domain.Box((0, 0),(1, 2+im)))
+    J2 = f |> Integral(Domain.Box((-1, 0),(1, 1))) |> Integral(Domain.Box(0, 2+im))
+    J3 = f |> Integral(Domain.Box(-1, 1)) |> Integral(Domain.Box(0, 1)) |> Integral(Domain.Box(0, 2+im))
     J4 = f |> Integral(Domain.Box((-1, 0, 0),(1, 1, 2+im)))
     @test J1() ≈ J2() ≈ J3() ≈ J4()
     f(x, y, z) = exp(-abs(x+2y+3z))
-    J1 = f |> Integral(Domain.Box{1}(-1, 1)) |> Integral(Domain.Box((0, -Infinity(2+3im)),(1, 2+im)))
-    J2 = f |> Integral(Domain.Box((-1, 0),(1, 1))) |> Integral(Domain.Box{1}(-Infinity(2+3im), 2+im))
-    J3 = f |> Integral(Domain.Box{1}(-1, 1)) |> Integral(Domain.Box{1}(0, 1)) |> Integral(Domain.Box{1}(-Infinity(2+3im), 2+im))
+    J1 = f |> Integral(Domain.Box(-1, 1)) |> Integral(Domain.Box((0, -Infinity(2+3im)),(1, 2+im)))
+    J2 = f |> Integral(Domain.Box((-1, 0),(1, 1))) |> Integral(Domain.Box(-Infinity(2+3im), 2+im))
+    J3 = f |> Integral(Domain.Box(-1, 1)) |> Integral(Domain.Box(0, 1)) |> Integral(Domain.Box(-Infinity(2+3im), 2+im))
     J4 = f |> Integral(Domain.Box((-1, 0, -Infinity(2+3im)),(1, 1, 2+im)))
     @test J1() ≈ J2() ≈ J3() ≈ J4()
 end
 
 @testset "Domain sums" begin
     f(x) = 1/(x^2+1)
-    J = Integral(f, Domain.Box{1}(0, 1, 1+2im, -1+2im, -1, 0))
+    J = Integral(f, Domain.Box(0, 1, 1+2im, -1+2im, -1, 0))
     @test J() ≈ π
     f(x) = 1/(x-im)
     @test J() ≈ 2π*im
-    J = Integral(f, Domain.Box{1}([0, 1, 1+2im, -1+2im, -1, 0]); backend = Backend.QuadGK())
+    J = Integral(f, Domain.Box([0, 1, 1+2im, -1+2im, -1, 0]); backend = Backend.QuadGK())
     @test J() ≈ 2π*im
 end
 
@@ -262,11 +262,11 @@ end
     @test Domain.Box((1, 2.0f0), (3, Infinity(4))) isa Domain.Box{2,Float32}
     @test Domain.Box((1, 2.0f0), (3, Infinity(4))) isa Domain.Box{2,Float32}
     @test_throws ArgumentError Domain.Box((1u"A", 2.0f0), (3, Infinity(4)))
-    J = Integral(cos, Domain.Box{1}(-Int32(1),Int16(1)); backend = Backend.Quadrature(gausslegendre(50)))
+    J = Integral(cos, Domain.Box(-Int32(1),Int16(1)); backend = Backend.Quadrature(gausslegendre(50)))
     @test J() isa Float64
-    J = Integral(cos, Domain.Box{1}(-Float32(π/2),Float32(π/2)); backend = Backend.Quadrature(gausslegendre(50)))
+    J = Integral(cos, Domain.Box(-Float32(π/2),Float32(π/2)); backend = Backend.Quadrature(gausslegendre(50)))
     @test J() isa Float32
-    J = Integral(cos, Domain.Box{1}(-Float32(π/2),Float32(π/2)); backend = Backend.QuadGK())
+    J = Integral(cos, Domain.Box(-Float32(π/2),Float32(π/2)); backend = Backend.QuadGK())
     @test J() isa Float32
     J = Integral((x,y) -> cos(x-y), Domain.Box((0f0,0f0),(-Float32(π/2),Float32(π))); backend = Backend.HCubature())
     @test J() isa Float32

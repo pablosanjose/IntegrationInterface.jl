@@ -56,7 +56,7 @@ Create a nested integral. Each level can have different `kw` and `domain` (see e
 ```julia
 julia> using QuadGK, HCubature
 
-julia> J = Integral(x -> exp(-x), Domain.Box{1}(0, Infinity(1)))  # uses QuadGK by default
+julia> J = Integral(x -> exp(-x), Domain.Box(0, Infinity(1)))  # uses QuadGK by default
 Integral
   Mutating   : false
   Domain     : Box{1,Float64}(0.0, Infinity(1.0))
@@ -68,7 +68,7 @@ julia> J()
 
 julia> f(x,y) = exp(-x^2-y^2);
 
-julia> J = f |> Integral(Domain.Box{1}(0,1)) |> Integral(Domain.Box{1}(0, Infinity(1))) # Nested!
+julia> J = f |> Integral(Domain.Box(0,1)) |> Integral(Domain.Box(0, Infinity(1))) # Nested!
 Integral
   Mutating   : false
   Domain     : Box{1,Float64}(0.0, Infinity(1.0))
@@ -102,7 +102,7 @@ formally equivalent to `Integral(f, domain; backend, result)(args...; kw...)`.
 ```julia
 julia> using QuadGK
 
-julia> integral(x -> exp(-x), Domain.Box{1}(0, Infinity(1)))
+julia> integral(x -> exp(-x), Domain.Box(0, Infinity(1)))
 1.0
 ```
 
@@ -117,6 +117,12 @@ integral
 Create an integration domain `Domain.Box{N}` for a function `f(x₁, x₂, ..., xₙ)` over an `N`
 dimensional hypercube defined by the intervals `(xᵢᵐⁱⁿ, xᵢᵐᵃˣ)`. The default backend for
 `Domain.Box{1}` is QuadGK, and for higher `N` it is HCubature.
+
+    Domain.Box(xs::Union{Number,Infinity}...)
+    Domain.Box(xs::AbstractVector)
+
+When `xs` has three or more elements, create a `Sum` of `Box{1}` domains correponding to
+adjacent intervals between elements in `xs`.
 
     Domain.Box{N}(f::Function)
 
@@ -141,6 +147,9 @@ julia> J(x0 = 3)
 julia> integral((x,y,z) -> cos(x+y+z), Domain.Box((0, 0, 0), (π/2, π/2, π/2)))
 -1.9999999998615692
 
+julia> integral(z -> 1/z, Domain.Box(1, im, -1, -im, 1)) / 2π  # contour integral
+0.0 + 1.0im
+
 ```
 
 # See also:
@@ -152,7 +161,7 @@ Domain.Box
 """
     Domain.interval(a::Union{Number,Infinity}, b::Union{Number,Infinity})
 
-Equivalent to `Domain.Box{1}(a, b)`. Construct a 1D domain from `a` to `b`
+Equivalent to `Domain.Box(a, b)`. Construct a 1D domain from `a` to `b`
 
     Domain.interval((a₁, b₁), (a₂, b₂), ...)
 
@@ -210,7 +219,7 @@ Domain.Simplex
     Infinity(x::Number)
 
 Creates an `Infinity` object representing an unbounded 1D ray passing through `x`. It can be
-used in place of `Inf` to create unbounded domains, e.g. `Domain.Box{1}(0, Infinity(1+im))`,
+used in place of `Inf` to create unbounded domains, e.g. `Domain.Box(0, Infinity(1+im))`,
 which represents a straight semi-infinite line in the complex plane starting at 0 and
 extending to infinity through point `1+im`.
 
