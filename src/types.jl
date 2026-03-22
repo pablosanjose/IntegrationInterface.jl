@@ -2,6 +2,8 @@
 
 abstract type AbstractDomain end
 
+abstract type AbstractEvaluatedDomain{N,T} <: AbstractDomain end
+
 abstract type AbstractBackend end
 
 # general callable object representing an integral over a domain using a backend

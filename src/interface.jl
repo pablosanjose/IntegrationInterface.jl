@@ -13,7 +13,19 @@ Base.:-(d::Infinity) = Infinity(-point(d))
 ### Integral/integral API ###
 
 (i::Integral)(args...; kw...) =
-    integrate(i, evaluate_domain(domain(i), args; kw...), args; kw...)
+    integrate_or_zero(i, evaluate_domain(domain(i), args; kw...), args; kw...)
+
+# fastpath for zero-size domains
+function integrate_or_zero(i, domain::AbstractEvaluatedDomain{<:Any,T}, args; kw...) where {T}
+    if isempty(domain)  # fastpath to zero
+        f = integrand(i)
+        x0 = first(domain)
+        f0 = f(x0..., args...; kw...) * zero(T)
+        return f0
+    else
+        return integrate(i, domain, args; kw...)
+    end
+end
 
 # integrate can assume the domain is not a Domain.Functional.
 # We just need backend-specific conversions

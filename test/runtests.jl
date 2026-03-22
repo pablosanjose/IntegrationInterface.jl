@@ -19,6 +19,11 @@ const II = IntegrationInterface
     @test integral((x,y) -> exp(-x-y), Domain.Box((0, 0), (Infinity(1), Infinity(1)))) ≈ 1
     @test integral((x; σ = 1) -> exp(-x/σ), Domain.Box{1}((; σ=1) -> (0, Infinity(σ))); σ = 4) ≈ 4
     @test integral((x, a; σ = 1) -> a*exp(-x/σ), Domain.Box{1}((a; σ=1) -> (0, Infinity(σ))), 4; σ = 4) ≈ 16
+    @test isempty(Domain.interval(2,2.0))
+    @test isempty(Domain.Box((1,1), (1,2)))
+    @test isempty(Domain.Simplex((1,1), (1,2), (1,1)))
+    @test integral(Returns(im), Domain.interval(1,1)) === 0.0 + 0.0im
+    @test integral(Returns(0), Domain.Simplex((1,1f0), (1,2), (1,1))) === 0.0f0
 end
 
 @testset begin "Unitful"

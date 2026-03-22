@@ -1,6 +1,6 @@
 module Domain
 
-using IntegrationInterface: AbstractDomain, Infinity
+using IntegrationInterface: AbstractDomain, AbstractEvaluatedDomain, Infinity
 import IntegrationInterface as II
 
 const MaybeInfinity{T} = Union{T,Infinity{<:T}}
@@ -19,7 +19,7 @@ struct Functional{D<:AbstractDomain,F} <: AbstractDomain
     f::F
 end
 
-struct Box{N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}} <: AbstractDomain
+struct Box{N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}} <: AbstractEvaluatedDomain{N,T}
     mins::P1
     maxs::P2
     function Box{N,T,P1,P2}(mins, maxs) where {N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}}
@@ -39,7 +39,7 @@ end
 const FiniteBox{N,T} = Box{N,T,NTuple{N,T},NTuple{N,T}}
 const FiniteRealBox{N} = FiniteBox{N,<:Real}
 
-struct Simplex{N,T<:Number,P<:SimplexVertices{N,T},D} <: AbstractDomain
+struct Simplex{N,T<:Number,P<:SimplexVertices{N,T},D} <: AbstractEvaluatedDomain{N,T}
     vertices::P          # collection of N+1 vertices in N-dimensions
     basisdata::D         # will be nothing (not needed) if the Simplex is real and finite
     function Simplex{N,T,P,D}(vertices, basisdata) where {N,T<:Number,P<:SimplexVertices{N,T},D}
@@ -127,6 +127,20 @@ function onpairs(f::Function, a, b, c, d...)
     return onpairs(f, b, c, d...)
 end
 
+# whether f is true on any pair
+anypair(f, xs::Tuple) = anypair(f, xs...)
+
+function anypair(f::Function, a, b, c, d...)
+    if any(x -> f(a, x), (b, c, d...))
+        return true
+    else
+        return anypair(f, b, c, d...)
+    end
+end
+
+anypair(f::Function, a, b) = f(a, b)
+
+
 ## Show ##
 II.domainname(d::Box{1,T}) where {T}= "Box{1,$T}($(short_show(only(d.mins))), $(short_show(only(d.maxs))))"
 II.domainname(d::Box{N,T}) where {N,T} = "Box{$N, $T}(($(short_show(d.mins...))), ($(short_show(d.maxs...)))))"
@@ -182,7 +196,7 @@ function interval(nodes)
     return Sum(Box(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
 end
 
-# accessors #
+# accessors and Base #
 
 Base.first(d::Box{1}) = only(d.mins)
 Base.last(d::Box{1}) = only(d.maxs)
@@ -190,7 +204,13 @@ Base.last(d::Box{1}) = only(d.maxs)
 Base.first(d::Box) = d.mins
 Base.last(d::Box) = d.maxs
 
-vertices(s::Simplex) = s.vertices
+vertices(d::Simplex) = d.vertices
+
+Base.first(d::Simplex) = first(d.vertices)
+Base.last(d::Simplex) = last(d.vertices)
+
+Base.isempty(d::Box) = any(d.mins .== d.maxs)
+Base.isempty(d::Simplex) = anypair(isequal, d.vertices)
 
 # ungroup domain sums
 
