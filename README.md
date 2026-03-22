@@ -10,7 +10,7 @@ The general interface reads
 ```julia
 julia> J = Integral(f, domain; backend::AbstractBackend = default_backend(domain), result = nothing)
 ```
-This produces an `J::Integral` object. Currently, only bounded and unbounded hypercube domains and simplices are possible. Hypercubes are created with `Domain.Box((a₁, a₂, ...), (b₁, b₂, ...))` or `Domain.interval((a₁, b₁), (a₂, b₂)...)` in terms of intervals `(aᵢ, bᵢ)` along dimension `i`. Simplices are defined in terms of n+1 vertices in n-dimensional space, with `Domain.Simplex(v₁, v₂,...,vₙ₊₁)`. Functions of `args` can be passed to the constructor of a domain to make it depend on arguments and keywords passed to `J`, see `Domain.Box` or `Domain.Simplex`
+This produces an `J::Integral` object representing the integral of `f` over a given `domain::AbstractDomain`.
 
 Mutating functions `f!(out, x..., args...; kw...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
@@ -24,6 +24,16 @@ If one doesn't need to evaluate `J` repeatedly for different `args` and `kw`, or
 ```julia
 julia> integral(f, domain, args...; backend::AbstractBackend = default_backend(domain), result = nothing, kw...)
 ```
+
+## Domains
+
+We currently support bounded and unbounded hypercube and simplex domains.
+
+- Hypercubes are created with `Domain.Box((a₁, a₂, ...), (b₁, b₂, ...))` or `Domain.interval((a₁, b₁), (a₂, b₂)...)` in terms of intervals `(aᵢ, bᵢ)` along dimension `i`.
+
+- Simplices are defined in terms of n+1 vertices in n-dimensional space, with `Domain.Simplex(v₁, v₂,...,vₙ₊₁)`.
+
+Functional domains that depend on `args` and `kw` can be constructed with `Domain.Box{N}((args...; kw...) -> vertices)` or `Domain.Simplex{N}((args...; kw...) -> vertices)`, see below for an example. Note the required `{N}`. Functional domains will be evaluated when calling `J(args...; kw...)`.
 
 ## Simple examples
 ### 1D integral
@@ -119,8 +129,7 @@ julia> (J1(), J2())
 ```
 Note the currying syntax used above for `J1`. It is equivalent to `J1 = Integral(Integral(f, Domain.Box(0,1)), Domain.Box(2,3))`.
 
-## Functional domains
-We can also make domains depend on `args` and `kw`s. In the above, this allows the inner domain to depend on outer integration variables. This provides one way to integrate over non-Box domains. For example,
+We can combine functional domains and integral composition to integrate over non-Box domains. To do so, we make the inner domain depend on outer integration variables. For example,
 
 $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
@@ -141,7 +150,6 @@ julia> J()
 1.324825188363749
 
 ```
-where we have passed a function to the `Domain.Box{1}` instead of the box bounds.
 
 ## Infinity
 
