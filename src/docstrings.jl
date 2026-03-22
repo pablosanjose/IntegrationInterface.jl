@@ -118,12 +118,6 @@ Create an integration domain `Domain.Box{N}` for a function `f(x₁, x₂, ..., 
 dimensional hypercube defined by the intervals `(xᵢᵐⁱⁿ, xᵢᵐᵃˣ)`. The default backend for
 `Domain.Box{1}` is QuadGK, and for higher `N` it is HCubature.
 
-    Domain.Box(xs::Union{Number,Infinity}...)
-    Domain.Box(xs::AbstractVector)
-
-When `xs` has three or more elements, create a `Sum` of `Box{1}` domains correponding to
-adjacent intervals between elements in `xs`.
-
     Domain.Box{N}(f::Function)
 
 Create a `D::Domain.Functional{Box{N}}` domain that depends on external parameters.
@@ -162,6 +156,12 @@ Domain.Box
     Domain.interval(a::Union{Number,Infinity}, b::Union{Number,Infinity})
 
 Equivalent to `Domain.Box(a, b)`. Construct a 1D domain from `a` to `b`
+
+    Domain.interval(xs::Union{Number,Infinity}...)
+    Domain.interval(xs)
+
+When `xs` is a collection of three or more Number or Infinity elements, create a `Sum` of
+`Box{1}` domains correponding to adjacent intervals between elements in `xs`.
 
     Domain.interval((a₁, b₁), (a₂, b₂), ...)
 

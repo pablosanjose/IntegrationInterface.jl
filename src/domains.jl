@@ -147,19 +147,6 @@ short_show(xs...) = join(short_show.(xs), ", ")
 
 # 1D box
 Box(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
-Box(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
-
-# Sum of consecutive 1D boxes
-function Box(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
-    nodes´ = (node1, node2, node3, nodes...)
-    return Sum(Box.(Base.front(nodes´), Base.tail(nodes´)))
-end
-
-# As above, but with an AbstractVector
-function Box(nodes::AbstractVector)
-    length(nodes) > 2 || throw(ArgumentError("To build a sum of adjacent intervals we need three or more nodes, got $(length(nodes))."))
-    return Sum(Box(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
-end
 
 # Functional domain
 Box{N}(f::Function) where {N} = Functional(Box{N}, f)
@@ -179,6 +166,21 @@ Sum(xs::AbstractDomain...) = Sum(xs)
 
 interval(a::NumberOrInfinity, b::NumberOrInfinity) = Box(a, b)
 interval(is::NTuple{2,NumberOrInfinity}...) = Box(first.(is), last.(is))
+
+# Sum of consecutive 1D boxes
+function interval(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
+    nodes´ = (node1, node2, node3, nodes...)
+    return Sum(Box.(Base.front(nodes´), Base.tail(nodes´)))
+end
+
+# As above, but with an iterator
+function interval(nodes)
+    all(x -> x isa NumberOrInfinity, nodes) ||
+        throw(ArgumentError("The form Domain.interval(nodes) is reserved for collections of `nodes` that are Number or Infinity"))
+    length(nodes) > 2 ||
+        throw(ArgumentError("To build a sum of adjacent intervals we need three or more nodes, got $(length(nodes))."))
+    return Sum(Box(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
+end
 
 # accessors #
 
