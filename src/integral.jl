@@ -1,11 +1,11 @@
 ## API ##
-Integral(f::F, domain::AbstractDomain; result = nothing, backend::AbstractBackend = default_backend(domain)) where {F} =
-	Integral(f, result, domain, backend)
+Integral(f::F, domain::AbstractDomain; result = nothing, backend::AbstractBackend = default_backend(domain), zerofastpath = false) where {F} =
+	Integral(f, result, domain, backend, zerofastpath)
 Integral(domain::AbstractDomain; kw...) = f -> Integral(f, domain; kw...)  # currying version
 
 # autoevaluated integral
-integral(f, domain::AbstractDomain, args...; result = nothing, backend::AbstractBackend = default_backend(domain), kw...) =
-    Integral(f, domain; result, backend)(args...; kw...)
+integral(f, domain::AbstractDomain, args...; result = nothing, backend::AbstractBackend = default_backend(domain), zerofastpath = false, kw...) =
+    Integral(f, domain; result, backend, zerofastpath)(args...; kw...)
 integral(domain::AbstractDomain, args...; kw...) = f -> integral(f, domain, args...; kw...)  # currying version
 
 # Can be overridden for user-defined f types and domains
@@ -26,6 +26,8 @@ integrand(i::Integral) = i.integrand
 backend(i::Integral) = i.backend
 
 result(i::Integral) = i.result
+
+zerofastpath(i::Integral) = i.zerofastpath
 
 backendname(i::Integral) = backendname(backend(i))
 backendname(s::AbstractBackend) = nameof(typeof(s))

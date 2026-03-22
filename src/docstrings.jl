@@ -31,13 +31,14 @@ documentation for details.
 Backend
 
 """
-    Integral(f::Function, domain; backend = default_backend(domain), result = nothing)
+    Integral(f::Function, domain; backend = default_backend(domain), result = nothing, zerofastpath = false)
 
 Create a `J::Integral` representing the integral of `f(x₁, ..., xₙ, args...; kw...)` over
 `domain` in `n`-dimensional space. The backend is an object from the `Backend` submodule,
-which may also depend on `args` and `kw`. The default backend is `Domain.QuadGK` for 1D domains, and
-`Domain.HCubature` for higher dimensions. To evaluate the integral for a given set of `args`
-and `kw`, do `J(args...; kw...)`. See also `integral` for direct evaluation.
+which may also depend on `args` and `kw`. See `Domain` for details on the backends and their
+defaults. To evaluate the integral for a given set of `args` and `kw`, do `J(args...;
+kw...)`. See also `integral` for direct evaluation. With `zerofastpath = true`, obviously
+empty domains will evaluate to zero quickly.
 
 An in-place form for `f`, namely `f!(out, x₁, ..., xₙ, args...; kw...)` that overwrites
 `out` in-place with the function value of type `A`, can also be used. This mode requires

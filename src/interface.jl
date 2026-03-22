@@ -17,11 +17,11 @@ Base.:-(d::Infinity) = Infinity(-point(d))
 
 # fastpath for zero-size domains
 function integrate_or_zero(i, domain::AbstractEvaluatedDomain{<:Any,T}, args; kw...) where {T}
-    if isempty(domain)  # fastpath to zero
+    if zerofastpath(i) && Domain.is_obviously_empty(domain)  # fastpath to zero
         f = integrand(i)
         x0 = first(domain)
-        f0 = f(x0..., args...; kw...) * zero(T)
-        return f0
+        f0dx = f(x0..., args...; kw...) * zero(T) # need a single evaluation to get integrand type
+        return f0dx
     else
         return integrate(i, domain, args; kw...)
     end

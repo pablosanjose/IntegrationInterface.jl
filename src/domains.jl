@@ -209,8 +209,8 @@ vertices(d::Simplex) = d.vertices
 Base.first(d::Simplex) = first(d.vertices)
 Base.last(d::Simplex) = last(d.vertices)
 
-Base.isempty(d::Box) = any(d.mins .== d.maxs)
-Base.isempty(d::Simplex) = anypair(isequal, d.vertices)
+is_obviously_empty(d::Box) = any(d.mins .== d.maxs)
+is_obviously_empty(d::Simplex) = anypair(isequal, d.vertices)
 
 # ungroup domain sums
 

@@ -12,6 +12,7 @@ struct Integral{R,S<:AbstractBackend,D<:AbstractDomain,F}
     result::R		# will be `nothing` if not in-place
     domain::D		# Tuple of AbstractDomains or a single AbstractDomain
     backend::S		# object representing the integration  backend(s)
+    zerofastpath::Bool  # whether to return zero quickly on obviously-empty domains
 end
 
 # represents an infinite ray passing through a point (direction fixed by another point´)
