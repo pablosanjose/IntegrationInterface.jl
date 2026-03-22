@@ -25,10 +25,10 @@ transform1D(t, x0::Number, x1::Number, t0) = transform_01(t, x0, x1, t0)
 const Box1D{T1,T2} = Domain.Box{1,<:Any,Tuple{T1},Tuple{T2}}
 
 # We don't use floats to preserve Float32 compatibility
-transform_domain(::Box1D{<:Number,<:Infinity}) = Domain.Box{1}(0, 1)
-transform_domain(::Box1D{<:Infinity,<:Number}) = Domain.Box{1}(0, 1)
-transform_domain(::Box1D{<:Infinity,<:Infinity}) = Domain.Box{1}(-1, 1)
-transform_domain(::Box1D{<:Number,<:Number}) = Domain.Box{1}(0, 1)
+transform_domain(::Box1D{<:Number,<:Infinity}) = Domain.Box(0, 1)
+transform_domain(::Box1D{<:Infinity,<:Number}) = Domain.Box(0, 1)
+transform_domain(::Box1D{<:Infinity,<:Infinity}) = Domain.Box(-1, 1)
+transform_domain(::Box1D{<:Number,<:Number}) = Domain.Box(0, 1)
 transform_domain(d::Box1D{<:Real,<:Real}) = d                  # no transformation
 
 # Need only in case t is a Tuple{Number} or SVector{1}

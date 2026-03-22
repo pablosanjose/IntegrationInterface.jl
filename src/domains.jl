@@ -146,19 +146,7 @@ short_show(xs...) = join(short_show.(xs), ", ")
 ## API ##
 
 # 1D box
-Box{1}(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
 Box(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
-
-# Sum of consecutive 1D boxes
-function Box{1}(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
-    nodes´ = (node1, node2, node3, nodes...)
-    return Sum(Box{1}.(Base.front(nodes´), Base.tail(nodes´)))
-end
-
-# As above, but with an AbstractVector
-function Box{1}(nodes::AbstractVector)
-    return Sum(Box{1}(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
-end
 
 # Functional domain
 Box{N}(f::Function) where {N} = Functional(Box{N}, f)
@@ -176,8 +164,23 @@ Sum(xs::AbstractDomain...) = Sum(xs)
 
 # Domain.interval helper
 
-interval(a::NumberOrInfinity, b::NumberOrInfinity) = Box{1}(a, b)
+interval(a::NumberOrInfinity, b::NumberOrInfinity) = Box(a, b)
 interval(is::NTuple{2,NumberOrInfinity}...) = Box(first.(is), last.(is))
+
+# Sum of consecutive 1D boxes
+function interval(node1::NumberOrInfinity, node2::NumberOrInfinity, node3::NumberOrInfinity, nodes::NumberOrInfinity...)
+    nodes´ = (node1, node2, node3, nodes...)
+    return Sum(Box.(Base.front(nodes´), Base.tail(nodes´)))
+end
+
+# As above, but with an iterator
+function interval(nodes)
+    all(x -> x isa NumberOrInfinity, nodes) ||
+        throw(ArgumentError("The form Domain.interval(nodes) is reserved for collections of `nodes` that are Number or Infinity"))
+    length(nodes) > 2 ||
+        throw(ArgumentError("To build a sum of adjacent intervals we need three or more nodes, got $(length(nodes))."))
+    return Sum(Box(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
+end
 
 # accessors #
 
@@ -195,7 +198,7 @@ II.ungroup(ss::Sum) = ss.subdomains
 
 # conversion
 
-to_1D_boxes(d::Box{N}) where {N} = ntuple(i -> Box{1}(d.mins[i], d.maxs[i]), Val(N))
+to_1D_boxes(d::Box{N}) where {N} = ntuple(i -> Box(d.mins[i], d.maxs[i]), Val(N))
 
 to_box(d::NTuple{N,Box{1}}) where {N} = Box(first.(d), last.(d))
 
@@ -215,7 +218,7 @@ function basisdata(vertices::SimplexVertices{N,T}) where {N,T}
     signature, vertices´ = infinity_to_front_but_one(vertices...)
     origin, vs... = II.point.(vertices´)
     basis = ntuple(i -> vs[i] .- origin, Val(N))
-    boxes = ntuple(i -> Box{1}(zero(T), maybe_Infinity(T(1), vertices´[1+i])), Val(N))
+    boxes = ntuple(i -> Box(zero(T), maybe_Infinity(T(1), vertices´[1+i])), Val(N))
     return origin, basis, boxes, signature
 end
 
