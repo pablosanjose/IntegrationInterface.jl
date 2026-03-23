@@ -7,10 +7,8 @@ Integral(domain; kw...) = f -> Integral(f, maybe_functional(domain); kw...)  # c
 integral(f, domain, args...; result = nothing, backend = Backend.default(domain), kw...) =
     Integral(f, domain; result, backend)(args...; kw...)
 
-maybe_functional(domain::Function) = Domain.Functional(domain)
 maybe_functional(domain::AbstractDomain) = domain
-maybe_functional(_) =
-    throw(ArgumentError("Domain must be a function or an AbstractDomain."))
+maybe_functional(domain) = Domain.Functional(domain)  # assumed callable
 
 ismutating(i::Integral) = !isnothing(i.result)
 
