@@ -7,11 +7,11 @@ import IntegrationInterface as II
 II.convert_domain(s::Domain.Box, ::Backend.Cubature) = II.convert_domain_generic(error_if_Inf(s))
 
 # Scalar case is easy
-II.convert_integrand(i::II.Integral{Nothing,<:Backend.Cubature}, domain, args; kw...) =
+II.convert_integrand(i::II.Integral{Nothing}, ::Backend.Cubature, domain, args; kw...) =
     II.convert_integrand_generic(i, domain, args; post = ensure_real, kw...)
 
 # Cubature only understands Scalar or Vector{Float32} arguments. We must serialize/deserialize
-function II.convert_integrand(i::II.Integral{<:Any,<:Backend.Cubature}, d, args; kw...)
+function II.convert_integrand(i::II.Integral{<:Any}, ::Backend.Cubature, d, args; kw...)
     f! = II.integrand(i)
     result = II.result(i)
     function fd!(t, out)

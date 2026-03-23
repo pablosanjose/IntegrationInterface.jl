@@ -8,9 +8,9 @@ $$J(\text{args}...; \text{kw}...) = \int_{D(\text{args}...; \text{kw}...)} d^n x
 
 The general interface reads
 ```julia
-julia> J = Integral(f, domain; backend::AbstractBackend = default_backend(domain), result = nothing)
+julia> J = Integral(f, domain; backend::AbstractBackend = Backend.default(domain), result = nothing)
 ```
-This produces an `J::Integral` object representing the integral of `f` over a given `domain::AbstractDomain`.
+This produces an `J::Integral` object representing the integral of `f` over a given `domain`.
 
 Mutating functions `f!(out, x..., args...; kw...)` that modify an `out::A` in-place can also be used. This is useful for heap-allocated integrands of type e.g. `A::AbstractArray`. In this pass an array of type `A` with the `result` keyword.
 
@@ -22,7 +22,7 @@ In the mutating case, this will also write the value of the integral into `resul
 
 If one doesn't need to evaluate `J` repeatedly for different `args` and `kw`, or use `J` inside an integral (see Composition below), one may use the following lowercase `integral` form to obtain the value of the integral directly (equivalent to building *and* calling `J(args...; kw...)`),
 ```julia
-julia> integral(f, domain, args...; backend::AbstractBackend = default_backend(domain), result = nothing, kw...)
+julia> integral(f, domain, args...; backend::AbstractBackend = Backend.default(domain), result = nothing, kw...)
 ```
 
 ## Domains
@@ -33,7 +33,7 @@ We currently support bounded and unbounded hypercube and simplex domains.
 
 - Simplices are defined in terms of n+1 vertices in n-dimensional space, with `Domain.Simplex(v₁, v₂,...,vₙ₊₁)`.
 
-Functional domains that depend on `args` and `kw` can be constructed with `Domain.Box{N}((args...; kw...) -> vertices)` or `Domain.Simplex{N}((args...; kw...) -> vertices)`, see below for an example. Note the required `{N}`. Functional domains will be evaluated when calling `J(args...; kw...)`.
+Functional domains that depend on `args` and `kw` can be constructed with e.g. `D(args...; kw...) = Domain.Box(...)`, etc, see below for an example. Functional domains are evaluated when calling `J(args...; kw...)`.
 
 ## Simple examples
 ### 1D integral
@@ -135,15 +135,17 @@ $$J = \int_{-1}^1 dy\int_{-\sqrt{1-y^2}}^{\sqrt{1-y^2}} dx (x-y)^2\cos(x+y) $$
 
 can be expressed as
 ```julia
-julia> J = f |> Integral(Domain.Box{1}(y -> (-sqrt(1-y^2), sqrt(1-y^2)))) |> Integral(Domain.Box(-1,1))
+julia> f(x,y) = (x-y)^2 * cos(x+y);
+
+julia> J = f |> Integral(y -> Domain.Box(-sqrt(1-y^2), sqrt(1-y^2))) |> Integral(Domain.Box(-1,1))
 Integral
   Mutating   : false
   Domain     : Box{1,Float64}(-1.0, 1.0)
-  Backend    : QuadGK
+  Backend    : Default
   Integrand  : Integral
     Mutating   : false
-    Domain     : Functional{Box{1}}
-    Backend    : QuadGK
+    Domain     : Functional
+    Backend    : Default
     Integrand  : f
 
 julia> J()
@@ -153,18 +155,18 @@ julia> J()
 
 ## Infinity
 
-Only a few backends support using `Inf` to express unbounded domains. For those that don't support it, we provide `Infinity(point::Number)` that can be used in box bounds instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `D = Domain.Box{2}((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))))`. Note that it is a `Domain.Functional` object that depends on a keyword argument `σ`. We can integrate a Gaussian over `D`, which gives `π` for `σ = 1`
+Only a few backends support using `Inf` to express unbounded domains. For those that don't support it, we provide `Infinity(point::Number)` that can be used in box bounds instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `(; σ = 1) -> Domain.Box((0, -Infinity(σ)), (Infinity(σ), Infinity(σ)))`. Note that it is a functional domain that depends on a keyword argument `σ`. We can integrate a Gaussian of width `σ` over `D(σ)`, which gives `π` for `σ = 1`
 
 ```julia
 julia> f(x, y; σ = 1) = exp(-0.5*(x^2+y^2)/σ^2);
 
-julia> D = Domain.Box{2}((; σ = 1) -> ((0, -Infinity(σ)), (Infinity(σ), Infinity(σ))));
+julia> D(; σ = 1) = Domain.Box((0, -Infinity(σ)), (Infinity(σ), Infinity(σ)));
 
 julia> J = Integral(f, D)
 Integral
   Mutating   : false
-  Domain     : Functional{Box{2}}
-  Backend    : HCubature
+  Domain     : Functional
+  Backend    : Default
   Integrand  : f
 
 julia> J(; σ = 1)

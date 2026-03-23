@@ -1,23 +1,14 @@
 ## API ##
-Integral(f::F, domain::AbstractDomain; result = nothing, backend::AbstractBackend = default_backend(domain)) where {F} =
-	Integral(f, result, domain, backend)
-Integral(domain::AbstractDomain; kw...) = f -> Integral(f, domain; kw...)  # currying version
+Integral(f::F, domain; result = nothing, backend = Backend.default(domain)) where {F} =
+	Integral(f, result, maybe_functional(domain), backend)
+Integral(domain; kw...) = f -> Integral(f, maybe_functional(domain); kw...)  # currying version
 
-# autoevaluated integral
-integral(f, domain::AbstractDomain, args...; result = nothing, backend::AbstractBackend = default_backend(domain), kw...) =
+# autoevaluated integral (need two methods due to ambiguities)
+integral(f, domain, args...; result = nothing, backend = Backend.default(domain), kw...) =
     Integral(f, domain; result, backend)(args...; kw...)
-integral(domain::AbstractDomain, args...; kw...) = f -> integral(f, domain, args...; kw...)  # currying version
 
-# Can be overridden for user-defined f types and domains
-default_backend(::Domain.Box{1}) = Backend.QuadGK()
-default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box{1}}}) = Backend.QuadGK()
-default_backend(::Domain.Functional{<:Domain.Box{1}}) = Backend.QuadGK()
-default_backend(::Domain.Box) = Backend.HCubature()
-default_backend(::Domain.Simplex) = Backend.HAdaptiveIntegration()
-default_backend(::Domain.Functional{<:Domain.Simplex}) = Backend.HAdaptiveIntegration()
-default_backend(::Domain.Sum{<:NTuple{<:Any,Domain.Box}}) = Backend.HCubature()
-default_backend(::Domain.Functional{<:Domain.Box}) = Backend.HCubature()
-default_backend(d) = throw(ArgumentError("No default backend exists for domain $(domainname(d)), please specify one explicitly."))
+maybe_functional(domain::AbstractDomain) = domain
+maybe_functional(domain) = Domain.Functional(domain)  # assumed callable
 
 ismutating(i::Integral) = !isnothing(i.result)
 

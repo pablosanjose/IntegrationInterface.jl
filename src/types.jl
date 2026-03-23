@@ -1,6 +1,7 @@
 # All types not belonging in submodules are defined up-front to avoid include ordering problems
 
 abstract type AbstractDomain end
+abstract type AbstractEvaluatedDomain{N,T} <: AbstractDomain end
 
 abstract type AbstractBackend end
 
