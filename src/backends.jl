@@ -14,7 +14,10 @@
 ## Collection of backend types ##
 module Backend
 
-using IntegrationInterface: AbstractBackend
+using IntegrationInterface: AbstractBackend, AbstractEvaluatedDomain, Domain, domainname
+
+# singleton default backend
+struct Default <: AbstractBackend end
 
 # Requires the QuadGK package
 struct QuadGK{O<:NamedTuple} <: AbstractBackend
@@ -49,5 +52,17 @@ struct HAdaptiveIntegration{O<:NamedTuple} <: AbstractBackend
 end
 
 HAdaptiveIntegration(; opts...) = HAdaptiveIntegration(NamedTuple(opts))
+
+# defaults for each domain type
+default(::Domain.Box{1}) = QuadGK()
+default(::Domain.Box) = HCubature()
+default(::Domain.Simplex) = HAdaptiveIntegration()
+default(_) = Default()
+
+# Can be overridden for user-defined f types and domains
+resolve(b::AbstractBackend, _) = b
+resolve(::Backend.Default, d::Domain.AbstractEvaluatedDomain) = default(d)
+resolve(::Backend.Default, d) =
+    throw(ArgumentError("No default backend exists for domain $(domainname(d)), please specify one explicitly."))
 
 end # module

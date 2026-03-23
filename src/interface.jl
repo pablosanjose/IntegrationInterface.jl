@@ -15,10 +15,13 @@ Base.:-(d::Infinity) = Infinity(-point(d))
 (i::Integral)(args...; kw...) =
     integrate(i, evaluate_domain(domain(i), args; kw...), args; kw...)
 
-# integrate can assume the domain is not a Domain.Functional.
-# We just need backend-specific conversions
-integrate(i::Integral, domain, args; kw...) =
-    i.backend(convert_integrand(i, domain, args; kw...), convert_domain(domain, i.backend), i.result)
+# integrate can assume the domain is now not a Domain.Functional.
+function integrate(i::Integral, domain, args; kw...)
+    backend´ = Backend.resolve(i.backend, domain)
+    integrand´ = convert_integrand(i, backend´, domain, args; kw...)
+    domain´ = convert_domain(domain, backend´)
+    return backend´(integrand´, domain´, i.result)
+end
 
 # Any Domain Sum is handled by summing over the domains ##
 # we skip all empty domains (except perhaps the first, for type stability)
@@ -90,8 +93,8 @@ maybe_post!(out, post) = (out .= post.(out))
 convert_domain(d::AbstractDomain, s::AbstractBackend) =
     throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for $(backendname(s)) backend, or backend package not loaded."))
 
-convert_integrand(i::Integral, domain, args; kw...) =
-    throw(ArgumentError("No conversion method for the integrand defined for the $(backendname(i)) backend, or backend package not loaded."))
+convert_integrand(i::Integral, backend, domain, args; kw...) =
+    throw(ArgumentError("No conversion method for the integrand defined for the $(backendname(backend)) backend, or backend package not loaded."))
 
 (s::AbstractBackend)(f, domain, result) =
     error("The integration backend package for $(nameof(typeof(s))) is not loaded.")

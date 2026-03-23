@@ -27,22 +27,36 @@ Currently it provides
 Options `opts` are passed to the corresponding integration routine. Check the package
 documentation for details.
 
+A special `Backend.Default()` encodes an automatic choice that depends on the domain type.
+The defaults are
+
+- `Domain.Box{1}`: `Backend.QuadGK()`
+- `Domain.Box{N>1}`: `Backend.HCubature()`
+- `Domain.Simplex{N}`: `Backend.HAdaptiveIntegration()`
+
 """
 Backend
 
 """
-    Integral(f::Function, domain; backend = default_backend(domain), result = nothing)
+    Integral(f::Function, domain::AbstractDomain; backend = Backend.Default(), result = nothing)
 
 Create a `J::Integral` representing the integral of `f(x₁, ..., xₙ, args...; kw...)` over
 `domain` in `n`-dimensional space. The backend is an object from the `Backend` submodule,
-which may also depend on `args` and `kw`. The default backend is `Domain.QuadGK` for 1D domains, and
-`Domain.HCubature` for higher dimensions. To evaluate the integral for a given set of `args`
-and `kw`, do `J(args...; kw...)`. See also `integral` for direct evaluation.
+which may also depend on `args` and `kw`. If not specified, a default is chosen depending on
+the `domain`. See `Backend` for default backends.
+
+To evaluate the integral for a given set of `args` and `kw`, do `J(args...; kw...)`. See
+also `integral` for direct evaluation.
 
 An in-place form for `f`, namely `f!(out, x₁, ..., xₙ, args...; kw...)` that overwrites
 `out` in-place with the function value of type `A`, can also be used. This mode requires
 that a `result` of type `A` is provided, which will be overwritten with the result of the
 integral upon evaluation.
+
+    Integral(f::Function, domain::Function; kw...)
+
+Like the above, but with a `domain` function that also depends on `args` and `kw`. It should
+return an `AbstractDomain` when evaluated with `domain(args...; kw...)`.
 
     f |> Integral(domain; kw...)
 
@@ -93,7 +107,7 @@ julia> J(), J´()
 Integral
 
 """
-    integral(f, domain, args...; backend = default_backend(domain), result = nothing, kw...)
+    integral(f, domain, args...; backend = Backend.Default(), result = nothing, kw...)
 
 Create and immediately evaluate a `J::Integral` object using `args` and `kw`. This is
 formally equivalent to `Integral(f, domain; backend, result)(args...; kw...)`.
@@ -118,20 +132,14 @@ Create an integration domain `Domain.Box{N}` for a function `f(x₁, x₂, ..., 
 dimensional hypercube defined by the intervals `(xᵢᵐⁱⁿ, xᵢᵐᵃˣ)`. The default backend for
 `Domain.Box{1}` is QuadGK, and for higher `N` it is HCubature.
 
-    Domain.Box{N}(f::Function)
-
-Create a `D::Domain.Functional{Box{N}}` domain that depends on external parameters.
-Evaluating it as `D(args...; kw...)` produces `Box(f(args...; kw...)...)`, which should be
-a `Box{N}`. Note that `Domain.Box(::Function)` is not supported, `N` must be specified.
-
 # Examples
 ```julia
 julia> using QuadGK, HCubature
 
-julia> J = Integral((x; kw...) -> exp(-x), Domain.Box{1}((; x0 = 1) -> (x0, Infinity(2x0))))
+julia> J = Integral((x; kw...) -> exp(-x), (; x0 = 1) -> Domain.Box(x0, Infinity(2x0)))
 Integral
   Mutating   : false
-  Domain     : Functional{Box{1}}
+  Domain     : Functional
   Backend    : QuadGK
   Integrand  : #53
 
@@ -140,9 +148,6 @@ julia> J(x0 = 3)
 
 julia> integral((x,y,z) -> cos(x+y+z), Domain.Box((0, 0, 0), (π/2, π/2, π/2)))
 -1.9999999998615692
-
-julia> integral(z -> 1/z, Domain.Box(1, im, -1, -im, 1)) / 2π  # contour integral
-0.0 + 1.0im
 
 ```
 
@@ -174,6 +179,10 @@ julia> using QuadGK
 
 julia> integral(cos, Domain.interval(0, π/2))
 1.0
+
+julia> integral(z -> 1/z, Domain.interval(1, im, -1, -im, 1)) / 2π  # contour integral
+0.0 + 1.0im
+
 ```
 """
 Domain.interval
@@ -187,13 +196,6 @@ coordinates `vᵢ = (xᵢ, yᵢ, ...)`. One or more (but not all) of the `vᵢ` 
 `Infinity(vᵢ...)` to construct an unbounded simplex, whose vertex `vᵢ` is shifted to
 infinity along a ray passing through `vᵢ` in a direction perpendicular to its opposite
 facet. The default backend for `Domain.Simplex` is `HAdaptiveIntegration`.
-
-    Domain.Simplex{N}(f::Function)
-
-Create a `D::Domain.Functional{Box{N}}` domain that depends on external parameters.
-Evaluating it as `D(args...; kw...)` produces `Simplex(f(args...; kw...)...)`, which should
-be a `Simplex{N}`. Note that `Domain.Simplex(::Function)` is not supported, `N` must be
-specified.
 
 # Examples
 ```julia
@@ -232,12 +234,12 @@ build unbounded Simplex domains.
 ```julia
 julia> using HCubature
 
-julia> J = Integral((x, y; σ) -> 1/(2π*σ^2) * exp(-(x^2+y^2)/(2*σ^2)), Domain.Box{2}((; σ) -> ((0,0), (Infinity(σ), Infinity(σ)))))
+julia> J = Integral((x, y; σ) -> 1/(2π*σ^2) * exp(-(x^2+y^2)/(2*σ^2)), (; σ) -> Domain.Box((0,0), (Infinity(σ), Infinity(σ))))
 Integral
   Mutating   : false
-  Domain     : Functional{Box{2}}
-  Backend    : HCubature
-  Integrand  : #47
+  Domain     : Functional
+  Backend    : Default
+  Integrand  : #1
 
 julia> J(σ = 1e5)
 0.2499999998823345

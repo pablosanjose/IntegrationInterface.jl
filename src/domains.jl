@@ -1,6 +1,6 @@
 module Domain
 
-using IntegrationInterface: AbstractDomain, Infinity
+using IntegrationInterface: AbstractDomain, AbstractEvaluatedDomain, Infinity
 import IntegrationInterface as II
 
 const MaybeInfinity{T} = Union{T,Infinity{<:T}}
@@ -14,12 +14,11 @@ struct Sum{T} <: AbstractDomain
     subdomains::T   # subdomains should be an iterator over AbstractDomains
 end
 
-struct Functional{D<:AbstractDomain,F} <: AbstractDomain
-    type::Type{D}
+struct Functional{F} <: AbstractDomain
     f::F
 end
 
-struct Box{N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}} <: AbstractDomain
+struct Box{N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}} <: AbstractEvaluatedDomain{N,T}
     mins::P1
     maxs::P2
     function Box{N,T,P1,P2}(mins, maxs) where {N,T<:Number,P1<:NTuple{N,MaybeInfinity{T}},P2<:NTuple{N,MaybeInfinity{T}}}
@@ -39,7 +38,7 @@ end
 const FiniteBox{N,T} = Box{N,T,NTuple{N,T},NTuple{N,T}}
 const FiniteRealBox{N} = FiniteBox{N,<:Real}
 
-struct Simplex{N,T<:Number,P<:SimplexVertices{N,T},D} <: AbstractDomain
+struct Simplex{N,T<:Number,P<:SimplexVertices{N,T},D} <: AbstractEvaluatedDomain{N,T}
     vertices::P          # collection of N+1 vertices in N-dimensions
     basisdata::D         # will be nothing (not needed) if the Simplex is real and finite
     function Simplex{N,T,P,D}(vertices, basisdata) where {N,T<:Number,P<:SimplexVertices{N,T},D}
@@ -133,7 +132,7 @@ II.domainname(d::Box{N,T}) where {N,T} = "Box{$N, $T}(($(short_show(d.mins...)))
 II.domainname(d::Simplex{N,T}) where {N,T} = "Simplex{$N, $T}($(join(short_show.(d.vertices), ", "))))"
 II.domainname(::Type{<:Box{N}}) where {N} = "Box{$N}"
 II.domainname(::Type{<:Simplex{N}}) where {N} = "Simplex{$N}"
-II.domainname(d::Functional) = "Functional{$(II.domainname(d.type))}"
+II.domainname(d::Functional) = "Functional"
 II.domainname(d::Sum) = string("Sum(", join(II.domainname.(d.subdomains), ", "), ")")
 II.domainname(d::Type) = nameof(d)
 
@@ -148,16 +147,8 @@ short_show(xs...) = join(short_show.(xs), ", ")
 # 1D box
 Box(a::NumberOrInfinity, b::NumberOrInfinity) = Box((a,), (b,))
 
-# Functional domain
-Box{N}(f::Function) where {N} = Functional(Box{N}, f)
-Simplex{N}(f::Function) where {N} = Functional(Simplex{N}, f)
-
-(::Type{D})(::Function) where {D<:AbstractDomain} =
-    throw(ArgumentError("`$(nameof(D))(::Function)` not supported, use `$(nameof(D)){N}(::Function)` instead."))
-
-# call
-(f::Functional{Box{N}})(args...; kw...) where {N} = Box(f.f(args...; kw...)...)::Box{N}
-(f::Functional{Simplex{N}})(args...; kw...) where {N} = Simplex(f.f(args...; kw...)...)::Simplex{N}
+# functional evaluation
+(f::Functional)(args...; kw...) = f.f(args...; kw...)
 
 # Sum of domains
 Sum(xs::AbstractDomain...) = Sum(xs)

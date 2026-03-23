@@ -6,7 +6,7 @@
 convert_domain(s::Domain.Box, ::Backend.Quadrature) =
     convert_domain_generic(s)
 
-convert_integrand(i::Integral{<:Any,<:Backend.Quadrature}, domain, args; kw...) =
+convert_integrand(i::Integral{<:Any}, ::Backend.Quadrature, domain, args; kw...) =
     convert_integrand_generic(i, domain, args; kw...)
 
 (s::Backend.Quadrature)(f, domain, ::Nothing) =

@@ -14,11 +14,11 @@ const II = IntegrationInterface
     f(x, p; σ = 2, λ = 0) = (σ + cos(p*x))*exp(-abs(x)*λ)
     @test integral(f, Domain.Box(0,π/2)) ≈ 1
     @test integral(f, Domain.Box(0,π/2), 2; σ = 1) ≈ π/2
-    @test f |> integral(Domain.Box(0,π/2), 2; σ = 1) ≈ π/2
+    @test integral(f, Domain.Box(0,π/2), 2; σ = 1) ≈ π/2
     @test integral(x -> exp(-x), Domain.Box(0, Infinity(1))) ≈ 1
     @test integral((x,y) -> exp(-x-y), Domain.Box((0, 0), (Infinity(1), Infinity(1)))) ≈ 1
-    @test integral((x; σ = 1) -> exp(-x/σ), Domain.Box{1}((; σ=1) -> (0, Infinity(σ))); σ = 4) ≈ 4
-    @test integral((x, a; σ = 1) -> a*exp(-x/σ), Domain.Box{1}((a; σ=1) -> (0, Infinity(σ))), 4; σ = 4) ≈ 16
+    @test integral((x; σ = 1) -> exp(-x/σ), (; σ=1) -> Domain.Box(0, Infinity(σ)); σ = 4) ≈ 4
+    @test integral((x, a; σ = 1) -> a*exp(-x/σ), (a; σ=1) -> Domain.Box(0, Infinity(σ)), 4; σ = 4) ≈ 16
 end
 
 @testset begin "Unitful"
@@ -78,18 +78,18 @@ end
 
     # bounds as args
     g(x, _...) = exp(-0.5*x^2)
-    J = Integral(g, Domain.Box{1}((a,b) -> (a,b)); backend)
+    J = Integral(g, (a,b) -> Domain.Box(a,b); backend)
     @test J(-Infinity(1), Infinity(1)) ≈ √(2π)
 
     # complex version
     h(x, _...) = exp(x)
-    J = Integral(h, Domain.Box{1}((a,b) -> (a,b)); backend)
+    J = Integral(h, (a,b) -> Domain.Box(a,b); backend)
     @test J(1+2im, 3.0+3im) ≈  h(3.0+3im, 0, 0) - h(1+2im, 0, 0)
 
     # in-place version
     result = zeros(Float64, 10)
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
-    J = Integral(g!, Domain.Box{1}((a,b) -> (a,b)); result, backend)
+    J = Integral(g!, (a,b) -> Domain.Box(a,b); result, backend)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
 end
 
@@ -117,19 +117,19 @@ end
 
     # bounds as args
     g(x, _...) = exp(-0.5*x^2)
-    J = Integral(g, Domain.Box{1}((a,b) -> (a,b)))
+    J = Integral(g, (a,b) -> Domain.Box(a,b))
     @test J(0, Inf) ≈ -J(0, -Inf) ≈ - J(Inf, 0) ≈  J(-Inf, 0) ≈ √(π/2)
     @test J(-Inf, Inf) ≈ -J(Inf, -Inf) ≈ J(-Infinity(1), Infinity(1)) ≈ √(2π)
 
     # complex version
     h(x, _...) = exp(x)
-    J = Integral(h, Domain.Box{1}((a,b) -> (a,b)))
+    J = Integral(h, (a,b) -> Domain.Box(a,b))
     @test J(1+2im, 3.0+3im) ≈  h(3.0+3im, 0, 0) - h(1+2im, 0, 0)
 
     # in-place version
     result = zeros(Float64, 10)
     g!(out, x, _...) = (out .= exp.(x .* eachindex(out)))
-    J = Integral(g!, Domain.Box{1}((a,b) -> (a,b)); result)
+    J = Integral(g!, (a,b) -> Domain.Box(a,b); result)
     @test J(0, 1) === result ≈ (exp.(eachindex(result)) .- 1) ./ eachindex(result)
 end
 
@@ -143,7 +143,7 @@ end
 
     # bounds as args
     g(x, y, _...) = cos(x+y)
-    J = Integral(g, Domain.Box{2}((a,b) -> ((a,a), (b,b))))
+    J = Integral(g, (a,b) -> Domain.Box((a,a), (b,b)))
     @test J(-1, 2) ≈ 4*cos(1)*sin(1.5)^2
 
     # complex domains (auto-converted to real)
@@ -151,14 +151,14 @@ end
 
     # Infs
     g(x, y, _...) = exp(-0.5*(x^2+y^2))
-    J = Integral(g, Domain.Box{2}((a,b) -> ((a,a), (b,b))))
+    J = Integral(g, (a,b) -> Domain.Box((a,a), (b,b)))
     @test_throws ArgumentError J(-Inf, Inf)     # HCubature doesn't like unbounded domains
     @test J(-Infinity(1), Infinity(1)) ≈ 2π     # HCubature doesn't like unbounded domains
 
      # in-place version
     result = zeros(Float64, 10)
     g!(out, x, y, _...) = (out .= exp.((x+y) .* eachindex(out)))
-    J = Integral(g!, Domain.Box{2}((a,b) -> ((a,a), (b,b))); result)
+    J = Integral(g!, (a,b) -> Domain.Box((a,a), (b,b)); result)
     @test_throws ArgumentError J(0, 1)          # HCubature doesn't do in-place
 end
 
@@ -172,7 +172,7 @@ end
 
     # bounds as args
     g(x, y, _...) = cos(x+y)
-    J = Integral(g, Domain.Box{2}((a,b) -> ((a,a), (b,b))); backend = Backend.Cubature())
+    J = Integral(g, (a,b) -> Domain.Box((a,a), (b,b)); backend = Backend.Cubature())
     @test J(-1, 2) ≈ 4*cos(1)*sin(1.5)^2
 
     # complex domains (auto-converted to real)
@@ -180,37 +180,38 @@ end
 
     g!(out, x, y, _...) = (out .= cos(x+y))
     result = [0.0+0im]
-    J = Integral(g!, Domain.Box{2}((a,b) -> ((a,a), (b,b))); result, backend = Backend.Cubature())
+    J = Integral(g!, (a,b) -> Domain.Box((a,a), (b,b)); result, backend = Backend.Cubature())
     @test J(-1-im, 1+im) === result ≈ [4*sin(1 + im)^2]
 
     # Infs
     g(x, y, _...) = exp(-0.5*(x^2+y^2))
-    J = Integral(g, Domain.Box{2}((a,b) -> ((a,a), (b,b))); backend = Backend.Cubature())
+    J = Integral(g, (a,b) -> Domain.Box((a,a), (b,b)); backend = Backend.Cubature())
     @test_throws ArgumentError J(-Inf, Inf)     # HCubature doesn't like unbounded domains
     @test J(-Infinity(1), Infinity(1)) ≈ 2π     # HCubature doesn't like unbounded domains
 
     # in-place version
     result = zeros(Float64, 10)
     g!(out, x, y, _...) = (out .= exp.(-(x+y) .* eachindex(out)))
-    J = Integral(g!, Domain.Box{2}((a,b) -> ((a,a), (b,b))); result, backend = Backend.Cubature())
+    J = Integral(g!, (a,b) -> Domain.Box((a,a), (b,b)); result, backend = Backend.Cubature())
     @test J(0, 1) === result ≈ ((exp.( .- eachindex(result)) .- 1) ./ eachindex(result)) .^ 2
 end
 
 @testset "HAdaptiveIntegration" begin
     f(x, y; σ = 1, _...) = cis(σ * x * y) * exp(-x^2-y)
-    J = Integral(f, Domain.Simplex{2}((; a = 1, b = 1, _...) -> ((0, 0), (a, 0), (0, b))))
-    @test II.backend(J) isa Backend.HAdaptiveIntegration   # default
+    J = Integral(f, (; a = 1, b = 1, _...) -> Domain.Simplex((0, 0), (a, 0), (0, b)))
+    @test II.backend(J) isa Backend.Default
     @test J() ≈ 0.309567883488632 + 0.0230970240588801im
     @test J(; σ = 2) ≈ 0.305201476947410 + 0.0457369920083456im
     @test J(; a = 3, b = 4) ≈ 0.685318616096836 + 0.291629495280167im
 
     J = Integral(f, Domain.Simplex((0, 0), (1, 0), Infinity(0, 2)))
+    @test II.backend(J) isa Backend.HAdaptiveIntegration   # default
     @test J() ≈ 0.618821963308144 + 0.231710996331552im
 
     J = Integral(f, Domain.Simplex((0,0), (1, 1/2), (1/2, 1)))
     @test J() ≈ 0.174223048821802 + 0.038391266900971im
 
-    J = Integral(f, Domain.Box{2}((; a = 1, b = 1, _...) -> ((0, 0), (a, b))); backend = Backend.HAdaptiveIntegration())
+    J = Integral(f, (; a = 1, b = 1, _...) -> Domain.Box((0, 0), (a, b)); backend = Backend.HAdaptiveIntegration())
     @test II.backend(J) isa Backend.HAdaptiveIntegration
     @test J() ≈ 0.457229458973690 + 0.0810545271153429im
     @test J(; σ = 2) ≈ 0.416753191897492 + 0.148416992955236im
@@ -255,6 +256,8 @@ end
     @test J() ≈ 2π*im
     J = Integral(f, Domain.interval([0, 1, 1+2im, -1+2im, -1, 0]); backend = Backend.QuadGK())
     @test J() ≈ 2π*im
+    J = Integral((z, a) -> 1/z, a -> Domain.interval(a, a*im, -a, -a*im, a))
+    @test J(2) ≈ 2π*im
 end
 
 @testset "type promotion" begin
