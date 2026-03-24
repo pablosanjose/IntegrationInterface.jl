@@ -126,6 +126,13 @@ function onpairs(f::Function, a, b, c, d...)
     return onpairs(f, b, c, d...)
 end
 
+anypair(f::Function, a, b) = f(a, b)
+
+function anypair(f::Function, a, b, c, d...)
+    any(x->f(a, x), (b, c, d...)) && return true
+    return anypair(f, b, c, d...)
+end
+
 ## Show ##
 II.domainname(d::Box{1,T}) where {T}= "Box{1,$T}($(short_show(only(d.mins))), $(short_show(only(d.maxs))))"
 II.domainname(d::Box{N,T}) where {N,T} = "Box{$N, $T}(($(short_show(d.mins...))), ($(short_show(d.maxs...)))))"
@@ -186,7 +193,7 @@ vertices(s::Simplex) = s.vertices
 # Fast check for domains with zero measure
 
 is_obviously_empty(d::Box) = any(d.mins .== d.maxs)
-is_obviously_empty(d::Simplex) = anypair(isequal, d.vertices)
+is_obviously_empty(d::Simplex) = anypair(isequal, d.vertices...)
 
 # ungroup domain sums
 
