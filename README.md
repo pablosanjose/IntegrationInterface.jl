@@ -182,7 +182,7 @@ Note that the integral preserves the sign of the simplex volume, which is negati
 
 ## Error estimation
 
-Many backends support computing both the value of the integral and its estimated error. To access the latter we may use the `witherror` command. Instead of evaluating a `J::Integral` object directly with `J(args...; kw...)`, we do `witherror(J, args...; kw...)` or `J |> witherror(args...; kw...)`.
+Many backends support computing both the value of the integral and its estimated error. To access the latter we may use the `witherror` command. Instead of evaluating a `J::Integral` object directly with `J(args...; kw...)`, we do `witherror(J, args...; kw...)` or `J |> witherror(args...; kw...)`, which returns `(value, error)`
 
 Example:
 ```julia
@@ -195,9 +195,9 @@ Integral
   Backend    : Default
   Integrand  : #26
 
-julia> witherror(J; λ = 2)
+julia> value, error = witherror(J; λ = 2)
 (2.0, 9.014765349073633e-11)
 
-julia> J |> witherror(; λ = 2)   # alternative `currying` form
+julia> value, error = J |> witherror(; λ = 2)   # alternative `currying` form
 (2.0, 9.014765349073633e-11)
 ```
