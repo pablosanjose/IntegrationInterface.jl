@@ -22,10 +22,12 @@ IntegrationInterfaceQuadGKExt = "QuadGK"
 IntegrationInterfaceSparseArraysExt = "SparseArrays"
 
 [compat]
+HAdaptiveIntegration = "1.0.1"
 Cubature = "1.5.1"
 HCubature = "1.8.0"
 QuadGK = "2.11.2"
 julia = "1.10"
+
 [extras]
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
