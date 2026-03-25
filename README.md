@@ -61,14 +61,14 @@ julia> integral((x,y) -> cos(x-y), Domain.Simplex((0,0), (1, 1/2), (1/2, 1))) # 
 
 ## Backends
 
-As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding backends in `IntegralBackends` are
+As shown above, the integration is actually performed by backend packages that may be loaded as needed. Currently supported packages (weak dependencies) and corresponding backends in the `Backends` submodule are
 
 - QuadGK.jl: `Backend.QuadGK(; opts...)` (calls `quadgk` and `quadgk!`, default for `Domain.Box{1}` domains)
 - HCubature.jl:  `Backend.HCubature(; opts...)` (calls `hcubature`, default for `Domain.Box{N}` domains with `N ≠ 1`)
 - Cubature.jl: `Backend.Cubature(; opts...)` (calls `hcubature`)
 - HAdaptiveIntegration.jl: `Backend.HAdaptiveIntegration(; opts...)` (calls `integrate`, default for `Domain.Simplex`)
 
-We also provide a `Backend.Quadrature((nodes, weights))` backend that can be used e.g. with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. The `Backend.Quadrature` package then uses these values for integrals over any `Domain.Box{N}` for any `N`.
+We also provide a `Backend.Quadrature((nodes, weights))` backend that can be used e.g. with the FastGaussQuadrature.jl package that computes nodes and weights for a 1D integral in the [-1, 1] integration domain. The `Backend.Quadrature` solver then uses these values for integrals over any `Domain.Box{N}` for any `N`.
 ```julia
 julia> using FastGaussQuadrature, QuadGK
 
