@@ -155,7 +155,7 @@ julia> J()
 
 ## Infinity
 
-Only a few backends support using `Inf` to express unbounded domains. For those that don't support it, we provide `Infinity(point::Number)` that can be used in box bounds instead. It represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `(; σ = 1) -> Domain.Box((0, -Infinity(σ)), (Infinity(σ), Infinity(σ)))`. Note that it is a functional domain that depends on a keyword argument `σ`. We can integrate a Gaussian of width `σ` over `D(σ)`, which gives `π` for `σ = 1`
+Only a few backends support using `Inf` to express unbounded domains. For those that don't support it, we provide `Infinity(point::Number)` that can be used in domain bounds instead. `Infinity(point)` represents an unbounded ray passing though `point` (which may be Real or not). These `Infinite` bounds are dealt with using an appropriate change of variables that takes `point` into account. As an example, consider a 2D half-plane `(; σ = 1) -> Domain.Box((0, -Infinity(σ)), (Infinity(σ), Infinity(σ)))`. Note that it is a functional domain that depends on a keyword argument `σ`. We can integrate a Gaussian of width `σ` over `D(σ)`, which gives `π` for `σ = 1`
 
 ```julia
 julia> f(x, y; σ = 1) = exp(-0.5*(x^2+y^2)/σ^2);
