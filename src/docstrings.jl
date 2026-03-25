@@ -103,6 +103,9 @@ Integral
 julia> J(), J´()
 (0.6618556550762793, 0.6618556550778879)
 ```
+
+# See also:
+    `integral`, `witherror`
 """
 Integral
 
@@ -121,9 +124,36 @@ julia> integral(x -> exp(-x), Domain.Box(0, Infinity(1)))
 ```
 
 # See also:
-    `Integral`
+    `Integral`, `witherror`
 """
 integral
+
+"""
+    witherror(J::Integral, args...; kw...)
+
+If the backend supports it, return `(value, error)`, where `value = J(args...; kw...)` and
+`error` is an error estimate for `value`.
+
+    J |> witherror(args...; kw...)
+
+Currying form of `witherror`, equivalent to `witherror(J, args...; kw...)`
+
+# Example
+```julia
+julia> using QuadGK
+
+julia> J = Integral((x; λ = 1) -> exp(-x/λ), Domain.Box(0, Infinity(1)))
+Integral
+  Mutating   : false
+  Domain     : Box{1,Float64}(0.0, Infinity(1.0))
+  Backend    : QuadGK
+  Integrand  : #2
+
+julia> witherror(J; λ = 2)
+(1.999999999999416, 2.1219251961643662e-8)
+```
+"""
+witherror
 
 """
     Domain.Box((x₁ᵐⁱⁿ, x₂ᵐⁱⁿ, ..., xₙᵐⁱⁿ), (x₁ᵐᵃˣ, x₂ᵐᵃˣ, ..., xₙᵐᵃˣ))

@@ -4,8 +4,9 @@
 #     `convert_domain_generic(domain)`
 #   - `convert_integrand(i::Integral, backend, domain, args; kw...)`: a function understood by
 #      the backend, can fall back to `convert_domain_generic(domain)`
-#   - `(::Backend)(integrand::Function, domain, result)`: call to actual implementation,
-#     once `integrand` and `domain` have been converted.
+#   - `(::Backend)(integrand::Function, domain, result, witherror...)`: call to actual
+#     implementation, once `integrand` and `domain` have been converted. If possible, with a
+#     `witherror` argument, return (value, error). If `witherror` is absent, return value.
 #
 # We bundle all AbstractBackends in a Backend submodule to avoid name clashes with their
 # respective backend packages.

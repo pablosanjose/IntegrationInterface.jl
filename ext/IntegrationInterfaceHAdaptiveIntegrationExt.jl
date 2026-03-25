@@ -34,7 +34,8 @@ end
 II.convert_integrand(::II.Integral{<:Any}, ::Backend.HAdaptiveIntegration, domain, args; kw...) =
     throw(ArgumentError("HAdaptiveIntegration does not support in-place integration. Use StaticArrays for array-valued integrands."))
 
-(s::Backend.HAdaptiveIntegration)(f, domain, ::Nothing) = integrate(f, domain; s.opts...) |> first
+(s::Backend.HAdaptiveIntegration)(f, domain, ::Nothing, witherror) = integrate(f, domain; s.opts...)
+(s::Backend.HAdaptiveIntegration)(f, domain, result) = s(f, domain, result, true) |> first
 
 error_if_inf_HAdaptiveIntegration(xs) = foreach(error_if_inf_HAdaptiveIntegration, xs)
 error_if_inf_HAdaptiveIntegration(x::Number) = isinf(x) &&
