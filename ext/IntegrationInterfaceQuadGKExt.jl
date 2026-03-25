@@ -12,7 +12,8 @@ II.convert_integrand(i::II.Integral{<:Any}, ::Backend.QuadGK, domain, args; kw..
 
 ## Call ##
 
-(s::Backend.QuadGK)(f, domain, ::Nothing) = quadgk(f, domain...; s.opts...) |> first
-(s::Backend.QuadGK)(f!, domain, result) = quadgk!(f!, result, domain...; s.opts...) |> first
+(s::Backend.QuadGK)(f, domain, ::Nothing, witherror) = quadgk(f, domain...; s.opts...)
+(s::Backend.QuadGK)(f!, domain, result, witherror) = quadgk!(f!, result, domain...; s.opts...)
+(s::Backend.QuadGK)(f, domain, result) = s(f, domain, result, true) |> first
 
 end # module

@@ -23,14 +23,17 @@ function II.convert_integrand(i::II.Integral{<:Any}, ::Backend.Cubature, d, args
     return fd!
 end
 
-(s::Backend.Cubature)(f, domain, ::Nothing) = hcubature(f, domain...; s.opts...) |> first
+(s::Backend.Cubature)(f, domain, ::Nothing, witherror) = hcubature(f, domain...; s.opts...)
 
 # Cubature requires vectors of Float64, so we serialize/deserialize
-function (s::Backend.Cubature)(f!, domain, result)
+function (s::Backend.Cubature)(f!, domain, result, witherror)
     v = II.serialize_array(Float64, result)
-    v .= first(hcubature(length(v), f!, domain...; s.opts...))
-	return result
+    value, error = hcubature(length(v), f!, domain...; s.opts...)
+    v .= value
+	return result, error
 end
+
+(s::Backend.Cubature)(f, domain, result) = first(s(f, domain, result, true))
 
 ensure_real(x::Real) = x
 ensure_real(_) = throw(ArgumentError("Cubature doesn't understand non-real functions. You can try with a mutating complex-vector-valued function."))

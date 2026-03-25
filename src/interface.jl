@@ -15,12 +15,17 @@ Base.:-(d::Infinity) = Infinity(-point(d))
 (i::Integral)(args...; kw...) =
     integrate(i, evaluate_domain(domain(i), args; kw...), args; kw...)
 
+witherror(i::Integral, args...; kw...) =
+    integrate(i, evaluate_domain(domain(i), args; kw...), args, true; kw...)
+
+witherror(args...; kw...) = J -> witherror(J, args...; kw...)
+
 # integrate can assume the domain is now not a Domain.Functional.
-function integrate(i::Integral, domain, args; kw...)
+function integrate(i::Integral, domain, args, witherror...; kw...)
     backend´ = Backend.resolve(i.backend, domain)
     integrand´ = convert_integrand(i, backend´, domain, args; kw...)
     domain´ = convert_domain(domain, backend´)
-    return backend´(integrand´, domain´, i.result)
+    return backend´(integrand´, domain´, i.result, witherror...)
 end
 
 # Any Domain Sum is handled by summing over the domains ##
@@ -47,6 +52,9 @@ function integrate(i::Integral, domain::Domain.Sum, args; kw...)
     end
     return resultsum
 end
+
+integrate(i::Integral, domain::Domain.Sum, args, witherror; kw...) =
+    throw(ArgumentError("witherror not supported on domain sums"))
 
 evaluate_domain(d::Domain.Functional, args; kw...) = d(args...; kw...)
 evaluate_domain(d::AbstractDomain, args; kw...) = d
@@ -89,7 +97,8 @@ end
 maybe_post!(out, ::typeof(identity)) = out
 maybe_post!(out, post) = (out .= post.(out))
 
-# failures
+
+## failure fallbacks
 convert_domain(d::AbstractDomain, s::AbstractBackend) =
     throw(ArgumentError("No conversion method for domain $(domainname(d)) defined for $(backendname(s)) backend, or backend package not loaded."))
 
@@ -98,3 +107,6 @@ convert_integrand(i::Integral, backend, domain, args; kw...) =
 
 (s::AbstractBackend)(f, domain, result) =
     error("The integration backend package for $(nameof(typeof(s))) is not loaded.")
+
+(s::AbstractBackend)(f, domain, result, witherror) =
+    error("The integration backend package for $(nameof(typeof(s))) is not loaded, or does not support error estimation.")

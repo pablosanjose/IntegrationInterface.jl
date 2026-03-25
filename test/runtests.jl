@@ -64,6 +64,9 @@ end
     J = Integral(f, Domain.Box((-Infinity(1),-Infinity(1)),(Infinity(1), Infinity(1))); backend)
     @test J() ≈ π
 
+    # witherror
+    @test_throws ErrorException witherror(J)
+
     # Infs
     J = Integral(f, Domain.Box(0, Inf); backend)
     @test_throws ArgumentError J(1; σ = 0, λ = 1) ≈ 0.5
@@ -103,6 +106,11 @@ end
     @test J(2; σ = 1) ≈ π/2
     @test J(1; σ = 0, λ = 1) ≈ 0.5*(1+exp(-π/2))
 
+    # witherror
+    value, error = J |> witherror(1; σ = 0, λ = 1)
+    @test value ≈ 0.5*(1+exp(-π/2))
+    @test error < 1e-10
+
     # Infs
     J = Integral(f, Domain.Box(0, Inf))
     @test J(1; σ = 0, λ = 1) ≈ 0.5
@@ -141,6 +149,11 @@ end
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
 
+    # witherror
+    value, error = J |> witherror(2; λ = 2, σ = 1)
+    @test value ≈ 1.4803924093
+    @test error < 5e-8
+
     # bounds as args
     g(x, y, _...) = cos(x+y)
     J = Integral(g, (a,b) -> Domain.Box((a,a), (b,b)))
@@ -169,6 +182,11 @@ end
     @test II.backend(J) isa Backend.Cubature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
+
+    # witherror
+    value, error = witherror(J, 2; λ = 2, σ = 1)
+    @test value ≈ 1.4803924093
+    @test error < 5e-8
 
     # bounds as args
     g(x, y, _...) = cos(x+y)
@@ -204,6 +222,11 @@ end
     @test J(; σ = 2) ≈ 0.305201476947410 + 0.0457369920083456im
     @test J(; a = 3, b = 4) ≈ 0.685318616096836 + 0.291629495280167im
 
+    # witherror
+    value, error = J |> witherror(; a = 3, b = 4)
+    @test value ≈ 0.685318616096836 + 0.291629495280167im
+    @test error < 5e-8
+
     J = Integral(f, Domain.Simplex((0, 0), (1, 0), Infinity(0, 2)))
     @test II.backend(J) isa Backend.HAdaptiveIntegration   # default
     @test J() ≈ 0.618821963308144 + 0.231710996331552im
@@ -233,6 +256,12 @@ end
     J1 = f |> Integral(Domain.Box(0, 20)) |> Integral(Domain.Box(-Infinity(1),Infinity(5)))
     J2 = f |> Integral(Domain.Box((0, -Infinity(1)),(20, Infinity(1))))
     @test J1() ≈ J2()
+
+    # witherror
+    value, error = J1 |> witherror
+    @test value ≈ J2()
+    @test error < 1e-8
+
     # 3D
     f(x, y, z) = cos(x+2y+3z)
     J1 = f |> Integral(Domain.Box(-1, 1)) |> Integral(Domain.Box((0, 0),(1, 2+im)))
@@ -258,6 +287,9 @@ end
     @test J() ≈ 2π*im
     J = Integral((z, a) -> 1/z, a -> Domain.interval(a, a*im, -a, -a*im, a))
     @test J(2) ≈ 2π*im
+
+    # witherror
+    @test_throws ArgumentError J |> witherror(2)
 end
 
 @testset "type promotion" begin
