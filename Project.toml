@@ -22,7 +22,11 @@ IntegrationInterfaceQuadGKExt = "QuadGK"
 IntegrationInterfaceSparseArraysExt = "SparseArrays"
 
 [compat]
+<<<<<<< dependabot/julia/HAdaptiveIntegration-1.0.1
 HAdaptiveIntegration = "1.0.1"
+=======
+HCubature = "1.8.0"
+>>>>>>> main
 julia = "1.10"
 [extras]
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
