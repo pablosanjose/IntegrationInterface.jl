@@ -179,3 +179,25 @@ julia> integral((x,y,z) -> exp(-z), Domain.Simplex((1,0,0), (-1,-1,0), (-1,1,0),
 -2.000000000125864
 ```
 Note that the integral preserves the sign of the simplex volume, which is negative in this case due to the order chosen for the vertices.
+
+## Error estimation
+
+Many backends support computing both the value of the integral and its estimated error. To access the latter we may use the `witherror` command. Instead of evaluating a `J::Integral` object directly with `J(args...; kw...)`, we do `witherror(J, args...; kw...)` or `J |> witherror(args...; kw...)`.
+
+Example:
+```julia
+julia> using QuadGK
+
+julia> J = Integral((x; λ = 1) -> exp(-x/λ), (; λ = 1) -> Domain.Box(0, Infinity(λ)))
+Integral
+  Mutating   : false
+  Domain     : Functional
+  Backend    : Default
+  Integrand  : #26
+
+julia> witherror(J; λ = 2)
+(2.0, 9.014765349073633e-11)
+
+julia> J |> witherror(; λ = 2)   # alternative `currying` form
+(2.0, 9.014765349073633e-11)
+```
