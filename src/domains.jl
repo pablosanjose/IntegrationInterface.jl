@@ -175,8 +175,8 @@ end
 function interval(nodes)
     all(x -> x isa NumberOrInfinity, nodes) ||
         throw(ArgumentError("The form Domain.interval(nodes) is reserved for collections of `nodes` that are Number or Infinity"))
-    length(nodes) > 2 ||
-        throw(ArgumentError("To build a sum of adjacent intervals we need three or more nodes, got $(length(nodes))."))
+    length(nodes) > 1 ||
+        throw(ArgumentError("To build a sum of adjacent intervals we need two or more nodes, got $(length(nodes))."))
     return Sum(Box(nodes[i], nodes[i+1]) for i in eachindex(nodes)[1:end-1])
 end
 
