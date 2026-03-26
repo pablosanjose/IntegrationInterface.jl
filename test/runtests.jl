@@ -262,6 +262,17 @@ end
     @test value ≈ J2()
     @test error < 1e-8
 
+    # nested with mutation
+    using HCubature.StaticArrays
+    f!(out, x, y, a; σ = 0.5) = out .= cos(x^2+y*a)*exp(-σ*(x^2+2y^2)) .* eachindex(out)
+    f(x, y, a; σ = 0.5) = cos(x^2+y*a)*exp(-σ*(x^2+2y^2)) * SVector{10,Float64}(1:10)
+    result = zeros(Float64, 10)
+    domainouter(a; σ = 0.5) = Domain.Box(σ, a)
+    domaininner(x, a; σ = 0.5) = Domain.Box(σ, a)
+    J1 = f! |> Integral(domaininner; result) |> Integral(domainouter; result = copy(result))
+    J2 = f |> Integral(domaininner) |> Integral(domainouter)
+    @test J1(1) ≈ J2(1)
+
     # 3D
     f(x, y, z) = cos(x+2y+3z)
     J1 = f |> Integral(Domain.Box(-1, 1)) |> Integral(Domain.Box((0, 0),(1, 2+im)))

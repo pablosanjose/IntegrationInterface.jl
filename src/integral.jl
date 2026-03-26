@@ -1,7 +1,7 @@
 ## API ##
 Integral(f::F, domain; result = nothing, backend = Backend.default(domain)) where {F} =
-	Integral(f, result, maybe_functional(domain), backend)
-Integral(domain; kw...) = f -> Integral(f, maybe_functional(domain); kw...)  # currying version
+	Integral(maybe_mutating(f, result), result, maybe_functional(domain), backend)
+Integral(domain; kw...) = f -> Integral(f, domain; kw...)  # currying version
 
 # autoevaluated integral (need two methods due to ambiguities)
 integral(f, domain, args...; result = nothing, backend = Backend.default(domain), kw...) =
@@ -9,6 +9,12 @@ integral(f, domain, args...; result = nothing, backend = Backend.default(domain)
 
 maybe_functional(domain::AbstractDomain) = domain
 maybe_functional(domain) = Domain.Functional(domain)  # assumed callable
+
+# if the integrand J is an Integral, mutation is handled externally to J
+# (we should not pass `out` to J and its domains)
+maybe_mutating(J::Integral, ::Nothing) = J
+maybe_mutating(J::Integral, _) = Mutating(J)
+maybe_mutating(f, _) = f
 
 ismutating(i::Integral) = !isnothing(i.result)
 
@@ -40,3 +46,5 @@ $i  Backend    : $(backendname(J))
 $i  Integrand  : ")
   print(ioindent, integrand(J))
 end
+
+Base.show(io::IO, J::Mutating) = (print(io, "[Mutating] "); show(io, J.f))

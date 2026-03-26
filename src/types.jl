@@ -7,11 +7,18 @@ abstract type AbstractBackend end
 
 # general callable object representing an integral over a domain using a backend
 struct Integral{R,S<:AbstractBackend,D<:AbstractDomain,F}
-    integrand::F	# usually a function, but can be other kind of object
+    integrand::F	# usually a function, but can be other kind of object, such as an Integral
     result::R		# will be `nothing` if not in-place
     domain::D		# Tuple of AbstractDomains or a single AbstractDomain
     backend::S		# object representing the integration  backend(s)
 end
+
+# used to wrap and integrand::Integral in a mutating case, so that it can be called without `out` argument
+struct Mutating{F}
+    f::F
+end
+
+(m::Mutating)(out, args...; kw...) = out .= m.f(args...; kw...)
 
 # represents an infinite ray passing through a point (direction fixed by another point´)
 struct Infinity{T}
