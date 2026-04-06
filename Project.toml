@@ -1,7 +1,7 @@
 name = "IntegrationInterface"
 uuid = "03ca86a4-b7cd-4b10-a38f-d7a84f40de1e"
 authors = ["Pablo San-Jose <lekand@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 
