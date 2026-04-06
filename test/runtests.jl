@@ -34,11 +34,12 @@ end
     @test J1() ≈ π/2 * u"A"^2
     @test J2() ≈ π/2 * u"A"^2 atol = 1e-4*u"A"^2
     # 2D
+    SupportedWithUnits = Union{Backend.Quadrature, Backend.HAdaptiveIntegration}
     for backend in (Backend.Quadrature(gausslegendre(50)), Backend.HCubature(), Backend.Cubature(), Backend.HAdaptiveIntegration())
         J = Integral((x,y)->cos(ustrip(x+y)), Domain.Box((0u"A", 0u"A"), (π/2 * u"A", π * u"A")); backend)
-        backend isa Backend.Quadrature ? (@test (J() ≈ -2u"A"^2)) : (@test_throws ArgumentError J())
+        backend isa SupportedWithUnits ? (@test (J() ≈ -2u"A"^2)) : (@test_throws ArgumentError J())
         J = Integral((x,y)->x*y*u"A", Domain.Box((0,0),(1,1)); backend)
-        backend isa Backend.Quadrature ? (@test (J() ≈ 0.25u"A")) : (@test_throws ArgumentError J())
+        backend isa SupportedWithUnits ? (@test (J() ≈ 0.25u"A")) : (@test_throws ArgumentError J())
     end
 end
 

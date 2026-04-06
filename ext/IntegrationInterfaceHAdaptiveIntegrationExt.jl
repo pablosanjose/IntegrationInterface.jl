@@ -20,15 +20,15 @@ function II.convert_domain(d::Domain.Simplex, ::Backend.HAdaptiveIntegration)
 end
 
 II.convert_integrand(i::II.Integral{Nothing}, ::Backend.HAdaptiveIntegration, domain::II.Domain.Box, args; kw...) =
-    II.convert_integrand_generic(i, domain, args; post = ensure_real_or_complex, kw...)
+    II.convert_integrand_generic(i, domain, args; kw...)
 
 II.convert_integrand(i::II.Integral{Nothing}, ::Backend.HAdaptiveIntegration, domain::II.Domain.FiniteRealSimplex, args; kw...) =
-    II.convert_integrand_generic(i, domain, args; post = ensure_real_or_complex, kw...)
+    II.convert_integrand_generic(i, domain, args; kw...)
 
 function II.convert_integrand(i::II.Integral{Nothing}, ::Backend.HAdaptiveIntegration, domain::II.Domain.Simplex{N}, args; kw...) where {N}
     _, basis, _, _ = Domain.basisdata(domain)
     volume = det(hcat(SVector.(basis)...))
-    return II.convert_integrand_generic(i, domain, args; post = x -> ensure_real_or_complex(x) * volume, kw...)
+    return II.convert_integrand_generic(i, domain, args; post = x -> x * volume, kw...)
 end
 
 II.convert_integrand(::II.Integral{<:Any}, ::Backend.HAdaptiveIntegration, domain, args; kw...) =
@@ -40,9 +40,5 @@ II.convert_integrand(::II.Integral{<:Any}, ::Backend.HAdaptiveIntegration, domai
 error_if_inf_HAdaptiveIntegration(xs) = foreach(error_if_inf_HAdaptiveIntegration, xs)
 error_if_inf_HAdaptiveIntegration(x::Number) = isinf(x) &&
     throw(ArgumentError("The HAdaptiveIntegration backend cannot deal with domains with `Inf`s. Use `Infinity` instead."))
-
-ensure_real_or_complex(x::Union{Real,Complex}) = x
-ensure_real_or_complex(x::AbstractArray{<:Union{Real,Complex}}) = x
-ensure_real_or_complex(_) = throw(ArgumentError("HAdaptiveIntegration only understand functions with Real or Complex values or eltypes, but not other Numbers like Unitful."))
 
 end # module
