@@ -23,15 +23,19 @@ function II.convert_integrand(i::II.Integral{<:Any}, ::Backend.Cubature, d, args
     return fd!
 end
 
-(s::Backend.Cubature)(f, domain, ::Nothing, witherror) = hcubature(f, domain...; s.opts...)
+(s::Backend.Cubature)(f, domain, ::Nothing, witherror) = hquadrature_or_hcubature(f, domain...; s.opts...)
 
 # Cubature requires vectors of Float64, so we serialize/deserialize
 function (s::Backend.Cubature)(f!, domain, result, witherror)
     v = II.serialize_array(Float64, result)
-    value, error = hcubature(length(v), f!, domain...; s.opts...)
+    value, error = hquadrature_or_hcubature(length(v), f!, domain...; s.opts...)
     v .= value
 	return result, error
 end
+
+hquadrature_or_hcubature(f, min::Number, max::Number; kw...) = hquadrature(f, min, max; kw...)
+hquadrature_or_hcubature(n, f!, min::Number, max::Number; kw...) = hquadrature(n, f!, min, max; kw...)
+hquadrature_or_hcubature(args...; kw...) = hcubature(args...; kw...)
 
 (s::Backend.Cubature)(f, domain, result) = first(s(f, domain, result, true))
 

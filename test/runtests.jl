@@ -150,6 +150,11 @@ end
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
 
+    # 1D version
+    J = Integral(exp, Domain.Box(0,1); backend = Backend.HCubature())
+    @test II.backend(J) isa Backend.HCubature
+    @test J() ≈ exp(1) - 1
+
     # witherror
     value, error = J |> witherror(2; λ = 2, σ = 1)
     @test value ≈ 1.4803924093
@@ -183,6 +188,11 @@ end
     @test II.backend(J) isa Backend.Cubature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
+
+    # 1D version
+    J = Integral(exp, Domain.Box(0,1); backend = Backend.Cubature())
+    @test II.backend(J) isa Backend.Cubature
+    @test J() ≈ exp(1) - 1
 
     # witherror
     value, error = witherror(J, 2; λ = 2, σ = 1)
