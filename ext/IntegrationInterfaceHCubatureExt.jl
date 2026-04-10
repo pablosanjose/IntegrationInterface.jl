@@ -19,6 +19,7 @@ II.convert_integrand(::II.Integral{<:Any}, ::Backend.HCubature, domain, args; kw
 hquadrature_or_hcubature(f, min::Number, max::Number; kw...) = hquadrature(f, min, max; kw...)
 hquadrature_or_hcubature(args...; kw...) = hcubature(args...; kw...)
 
+error_if_Inf(s::Domain.Box{1}) = error_if_Inf(first(s)) || error_if_Inf(last(s)) || s
 error_if_Inf(s::Domain.Box) = any(error_if_Inf, first(s)) || any(error_if_Inf, last(s)) || s
 error_if_Inf(x::Number) = isinf(x) &&
     throw(ArgumentError("HCubature doesn't understand domains with `Inf`s. Use `Infinity(point)` instead."))

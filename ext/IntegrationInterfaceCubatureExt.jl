@@ -42,6 +42,7 @@ hquadrature_or_hcubature(args...; kw...) = hcubature(args...; kw...)
 ensure_real(x::Real) = x
 ensure_real(_) = throw(ArgumentError("Cubature doesn't understand non-real functions. You can try with a mutating complex-vector-valued function."))
 
+error_if_Inf(s::Domain.Box{1}) = error_if_Inf(first(s)) || error_if_Inf(last(s)) || s
 error_if_Inf(s::Domain.Box) = any(error_if_Inf, first(s)) || any(error_if_Inf, last(s)) || s
 error_if_Inf(x::Number) = isinf(x) &&
     throw(ArgumentError("Cubature doesn't understand domains with `Inf`s. Use `Infinity(point)` instead."))

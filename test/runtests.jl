@@ -147,6 +147,10 @@ end
     J = Integral(exp, Domain.Box(0,1); backend = Backend.HCubature())
     @test II.backend(J) isa Backend.HCubature
     @test J() ≈ exp(1) - 1
+    J = Integral(exp, Domain.Box(-Infinity(1),0); backend = Backend.HCubature())
+    @test J() ≈ 1
+    J = Integral(x->exp(-abs(x)), Domain.Box(-Infinity(1),Infinity(1)); backend = Backend.HCubature())
+    @test J() ≈ 2
 
     f(x, y) = cos(x+y)
     f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
@@ -186,6 +190,10 @@ end
     J = Integral(exp, Domain.Box(0,1); backend = Backend.Cubature())
     @test II.backend(J) isa Backend.Cubature
     @test J() ≈ exp(1) - 1
+    J = Integral(exp, Domain.Box(-Infinity(1),0); backend = Backend.Cubature())
+    @test J() ≈ 1
+    J = Integral(x->exp(-abs(x)), Domain.Box(-Infinity(1),Infinity(1)); backend = Backend.Cubature())
+    @test J() ≈ 2
 
     f(x, y) = cos(x+y)
     f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
