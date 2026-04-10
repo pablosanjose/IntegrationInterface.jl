@@ -13,8 +13,11 @@ II.convert_integrand(i::II.Integral{Nothing}, ::Backend.HCubature, domain, args;
 II.convert_integrand(::II.Integral{<:Any}, ::Backend.HCubature, domain, args; kw...) =
     throw(ArgumentError("HCubature does not support in-place integration. Use StaticArrays for array-valued integrands."))
 
-(s::Backend.HCubature)(f, domain, ::Nothing, witherror) = hcubature(f, domain...; s.opts...)
+(s::Backend.HCubature)(f, domain, ::Nothing, witherror) = hquadrature_or_hcubature(f, domain...; s.opts...)
 (s::Backend.HCubature)(f, domain, result) = s(f, domain, result, true) |> first
+
+hquadrature_or_hcubature(f, min::Number, max::Number; kw...) = hquadrature(f, min, max; kw...)
+hquadrature_or_hcubature(args...; kw...) = hcubature(args...; kw...)
 
 error_if_Inf(s::Domain.Box) = any(error_if_Inf, first(s)) || any(error_if_Inf, last(s)) || s
 error_if_Inf(x::Number) = isinf(x) &&
