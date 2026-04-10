@@ -143,17 +143,17 @@ end
 end
 
 @testset "HCubature" begin
+    # 1D version
+    J = Integral(exp, Domain.Box(0,1); backend = Backend.HCubature())
+    @test II.backend(J) isa Backend.HCubature
+    @test J() ≈ exp(1) - 1
+
     f(x, y) = cos(x+y)
     f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
     J = Integral(f, Domain.Box((0,0),(π/2,π)))
     @test II.backend(J) isa Backend.HCubature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
-
-    # 1D version
-    J = Integral(exp, Domain.Box(0,1); backend = Backend.HCubature())
-    @test II.backend(J) isa Backend.HCubature
-    @test J() ≈ exp(1) - 1
 
     # witherror
     value, error = J |> witherror(2; λ = 2, σ = 1)
@@ -182,17 +182,17 @@ end
 end
 
 @testset "Cubature" begin
+    # 1D version
+    J = Integral(exp, Domain.Box(0,1); backend = Backend.Cubature())
+    @test II.backend(J) isa Backend.Cubature
+    @test J() ≈ exp(1) - 1
+
     f(x, y) = cos(x+y)
     f(x, y, p; σ = 2, λ = 0) = (cos(x+p*y)+λ)*exp(-(x^2+(p*y)^2)/(2*σ^2))
     J = Integral(f, Domain.Box((0,0),(π/2,π)); backend = Backend.Cubature())
     @test II.backend(J) isa Backend.Cubature   # default
     @test J() ≈ -2
     @test J(2; λ = 2, σ = 1) ≈ 1.4803924093
-
-    # 1D version
-    J = Integral(exp, Domain.Box(0,1); backend = Backend.Cubature())
-    @test II.backend(J) isa Backend.Cubature
-    @test J() ≈ exp(1) - 1
 
     # witherror
     value, error = witherror(J, 2; λ = 2, σ = 1)
