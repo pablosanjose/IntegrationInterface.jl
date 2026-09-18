@@ -25,6 +25,7 @@ IntegrationInterfaceSparseArraysExt = "SparseArrays"
 HAdaptiveIntegration = "1.1"
 Cubature = "1.5.1"
 HCubature = "1.8.0"
+LinearAlgebra = "1.10"
 QuadGK = "2.11.2"
 julia = "1.10"
 
